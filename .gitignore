@@ -97,4 +97,10 @@ Pipfile.lock
 
 # Backup files
 *.bak
-*.backupvenv/
+*.backup
+
+# Claude AI files
+CLAUDE.md
+
+# Virtual Environment
+venv/
