@@ -101,6 +101,8 @@ Pipfile.lock
 
 # Claude AI files
 CLAUDE.md
+cfb_predictor_spec.md
+implementation_plan.md
 
 # Virtual Environment
 venv/
