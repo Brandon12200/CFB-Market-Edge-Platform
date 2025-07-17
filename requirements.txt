@@ -1,0 +1,16 @@
+# Core Dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# System Monitoring (optional but recommended)
+psutil>=5.9.0
+
+# Development Dependencies (optional)
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Type Hints (for older Python versions)
+typing-extensions>=4.7.0
