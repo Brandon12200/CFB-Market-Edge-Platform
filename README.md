@@ -271,14 +271,6 @@ pytest tests/test_api_clients.py
 
 130+ total FBS teams supported with comprehensive alias mapping.
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-factor`)
-3. Commit your changes (`git commit -m 'Add amazing factor'`)
-4. Push to the branch (`git push origin feature/amazing-factor`)
-5. Open a Pull Request
-
 ### Development Guidelines
 - Follow Black formatting (88 character limit)
 - Add type hints to all public methods
@@ -288,31 +280,3 @@ pytest tests/test_api_clients.py
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Roadmap
-
-### Current Status (v2.0)
-- ✅ Complete CLI interface
-- ✅ Three-factor prediction system
-- ✅ API integration with error handling
-- ✅ Comprehensive team normalization
-- ✅ Real-time betting line access
-
-### Planned Features (v2.1+)
-- 🔄 Advanced situational factors (revenge games, lookahead spots)
-- 🔄 Market sentiment analysis (public betting percentages)
-- 🔄 Weather impact factors
-- 🔄 Injury report integration
-- 🔄 Line movement tracking
-- 🔄 Historical performance backtesting
-
-## Support
-
-- 📖 **Documentation**: See [CLAUDE.md](CLAUDE.md) for detailed implementation notes
-- 🐛 **Issues**: Report bugs via GitHub Issues
-- 💡 **Feature Requests**: Submit via GitHub Discussions
-- 📧 **Contact**: [Your email or contact method]
-
----
-
-**Disclaimer**: This tool is for educational and research purposes only. Always gamble responsibly and within your means. Past performance does not guarantee future results.
