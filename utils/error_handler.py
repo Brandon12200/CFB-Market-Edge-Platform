@@ -396,6 +396,7 @@ class ErrorHandler:
         Returns:
             dict: Recovery assessment and recommendations
         """
+        from datetime import timedelta
         recent_errors = [
             error for error in self.error_history
             if datetime.fromisoformat(error['timestamp']) > 
