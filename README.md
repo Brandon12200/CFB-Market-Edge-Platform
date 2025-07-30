@@ -1,4 +1,4 @@
-# CFB Contrarian Predictor v2.0
+# CFB Contrarian Predictor
 
 > A command-line tool that identifies contrarian college football betting opportunities by layering "human factor" adjustments on top of Vegas market consensus.
 
@@ -17,12 +17,12 @@ The system analyzes college football games through three weighted factor categor
 
 ## Features
 
-- 🏈 **Complete P4 Schedule Access** - List all Power 4 games by week
-- 📊 **Live Betting Lines** - Integration with The Odds API
-- 🎯 **Contrarian Edge Detection** - Identifies opportunities with 3+ point discrepancies
-- 📈 **Factor Breakdown** - Detailed analysis of each prediction component
-- ⚡ **Fast Execution** - Sub-3 second analysis per game
-- 🔒 **Rate Limited** - Respects API quotas and prevents account suspension
+- **Complete P4 Schedule Access** - List all Power 4 games by week
+- **Live Betting Lines** - Integration with The Odds API (requires key)
+- **Contrarian Edge Detection** - Multi-tier edge classification system
+- **Factor Breakdown** - Detailed analysis of each prediction component
+- **Efficient Execution** - Optimized for API rate limits and quotas
+- **Rate Limited** - Respects API quotas and prevents account suspension
 
 ## Quick Start
 
@@ -47,8 +47,8 @@ cp .env.example .env
 
 ### API Keys Required
 
-1. **The Odds API** - Sign up at [theoddsapi.com](https://theoddsapi.com) (30 seconds, 500 free calls/month)
-2. **ESPN API** - No key required (public API with rate limiting)
+1. **The Odds API** - Sign up at [theoddsapi.com](https://theoddsapi.com) (500 free calls/month) - **REQUIRED** for betting lines
+2. **ESPN API** - No key required (public API with rate limiting) - **OPTIONAL** but recommended
 
 ### Basic Usage
 
@@ -62,7 +62,7 @@ python main.py --home uga --away bama --verbose --show-factors
 # List all P4 games for a week
 python main.py --list-games 1
 
-# Analyze all games in a week
+# Analyze all games in a week (simplified analysis currently available)
 python main.py --analyze-week 8 --min-edge 3.0
 
 # See all supported teams
@@ -77,22 +77,25 @@ $ python main.py --home clemson --away lsu
 
 Analyzing: LSU @ CLEMSON
 --------------------------------------------------
-📊 Fetching game data...
-📈 Data Quality: 70.0%
-💰 Vegas Spread: CLEMSON -2.5
+Fetching game data...
+Data Quality: 70.0%
+Vegas Spread: CLEMSON -2.5
 
-🎯 Generating Contrarian Prediction...
+Generating Contrarian Prediction...
 
-📊 Prediction Results:
+Prediction Results:
    Vegas Spread: CLEMSON -2.5
    Contrarian Prediction: CLEMSON -2.6
    Factor Adjustment: -0.11 points
    Edge Size: 0.11 points
 
-🎯 Edge Analysis:
+Edge Analysis:
    Edge Type: No Edge
    Confidence: Medium (61.1%)
    Recommendation: PASS - No meaningful contrarian opportunity
+
+Explanation:
+   No meaningful contrarian edge identified. Prediction confidence: Medium (61.1%). Vegas line: -2.5, Contrarian prediction: -2.6.
 ```
 
 ### Weekly Schedule
@@ -101,7 +104,7 @@ $ python main.py --list-games 1
 
 CFB Week 1 Schedule - P4 Games
 ============================================================
-🏈 Found 84 P4 games for Week 1
+Found 84 P4 games for Week 1
 
  2. Iowa State           @ Kansas St            (Neutral: Aviva Stadium)
     Command: python main.py --home kansas-state --away iowa-state
@@ -117,7 +120,7 @@ CFB Week 1 Schedule - P4 Games
 ```bash
 $ python main.py --home georgia --away alabama --show-factors
 
-📈 Factor Breakdown:
+Factor Breakdown:
    ExperienceDifferential: +0.000 (weighted: +0.000)
       → Coaching experience levels are comparable
    VenuePerformance: +0.300 (weighted: +0.030)
@@ -125,7 +128,7 @@ $ python main.py --home georgia --away alabama --show-factors
    PressureSituation: -0.060 (weighted: -0.006)
       → Both teams facing similar pressure levels
 
-📊 Category Summary:
+Category Summary:
    Coaching Edge: +0.024 points
    Situational Context: +0.005 points
    Momentum Factors: +0.000 points
@@ -174,7 +177,7 @@ cfb-contrarian-predictor/
 # Single game prediction
 --home TEAM --away TEAM [--week N] [--verbose] [--show-factors]
 
-# Batch analysis
+# Batch analysis (simplified data overview currently)
 --analyze-week N [--min-edge POINTS]
 
 # Utility commands
@@ -220,14 +223,17 @@ To add new prediction factors:
 
 ### Environment Variables
 ```bash
-# Required
+# Required for full functionality
 ODDS_API_KEY=your_odds_api_key_here
 
-# Optional  
-LOG_LEVEL=INFO
-CACHE_TTL=3600
-RATE_LIMIT_ODDS=83
-RATE_LIMIT_ESPN=60
+# Optional configuration
+ESPN_API_KEY=your_espn_key_here     # Optional but recommended
+LOG_LEVEL=INFO                      # DEBUG, INFO, WARNING, ERROR
+CACHE_TTL=3600                      # Cache TTL in seconds
+ODDS_API_RATE_LIMIT=83             # Calls per day for Odds API
+ESPN_API_RATE_LIMIT=60             # Calls per minute for ESPN API
+DEBUG=false                         # Enable debug mode
+SESSION_CACHE_SIZE=1000            # Max cached items per session
 ```
 
 ### Factor Weights
@@ -256,10 +262,10 @@ pytest tests/test_api_clients.py
 
 ## Performance
 
-- **Target execution time**: <15 seconds per prediction
-- **API call efficiency**: <20 calls per prediction
-- **Rate limiting**: Compliant with all API quotas
-- **Cache hit rate**: >80% for repeated team lookups
+- **Maximum execution time**: 15 seconds per prediction (configurable)
+- **API call limit**: <20 calls per prediction
+- **Rate limiting**: Compliant with all API quotas (83/day odds, 60/min ESPN)
+- **Cache system**: Session-level caching for repeated lookups
 
 ## Supported Conferences
 
@@ -270,12 +276,6 @@ pytest tests/test_api_clients.py
 - **Notre Dame** (Independent)
 
 130+ total FBS teams supported with comprehensive alias mapping.
-
-### Development Guidelines
-- Follow Black formatting (88 character limit)
-- Add type hints to all public methods
-- Include unit tests for new factors
-- Update CLAUDE.md with implementation notes
 
 ## License
 
