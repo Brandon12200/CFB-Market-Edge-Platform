@@ -322,7 +322,8 @@ def list_teams() -> None:
                    'UCF', 'BYU', 'COLORADO', 'UTAH', 'ARIZONA', 'ARIZONA STATE'],
         'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH',
                 'LOUISVILLE', 'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITTSBURGH',
-                'SYRACUSE', 'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'NOTRE DAME']
+                'SYRACUSE', 'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST'],
+        'INDEPENDENT': ['NOTRE DAME']
     }
     
     for conf_name, teams in conferences.items():
@@ -760,7 +761,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH', 'LOUISVILLE',
                    'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITT', 'SYRACUSE',
                    'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'CALIFORNIA', 'STANFORD', 'SMU'],
-            'INDEPENDENT': ['NOTRE DAME', 'UCONN']  # Football independents that we track
+            'INDEPENDENT': ['NOTRE DAME']  # Football independents that we track
         }
         
         # Filter to Power 4 games only
