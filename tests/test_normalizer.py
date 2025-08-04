@@ -3,7 +3,7 @@ Tests for team name normalizer functionality.
 """
 
 import unittest
-from normalizer import TeamNameNormalizer, normalizer
+from utils.normalizer import TeamNameNormalizer, normalizer
 
 
 class TestTeamNameNormalizer(unittest.TestCase):

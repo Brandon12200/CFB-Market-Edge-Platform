@@ -13,7 +13,7 @@ import json
 from config import config
 from utils.rate_limiter import rate_limiter_manager, setup_api_rate_limiters
 from data.cache_manager import cache_manager
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class OddsAPIClient:
@@ -387,7 +387,7 @@ class OddsAPIClient:
     
     def _get_week_date_range(self, week: int) -> Tuple[datetime, datetime]:
         """
-        Get date range for a specific college football week.
+        Get date range for a specific college football week by querying actual schedule data.
         
         Args:
             week: Week number (1-17)
@@ -395,18 +395,108 @@ class OddsAPIClient:
         Returns:
             Tuple of (start_date, end_date)
         """
-        # College football season typically starts in late August/early September
-        # Week 1 is usually around August 24-30
+        # Try to get week boundaries from ESPN schedule API
+        try:
+            from data.espn_client import ESPNStatsClient
+            espn_client = ESPNStatsClient()
+            
+            # Get week boundaries from ESPN schedule data
+            week_boundaries = espn_client.get_week_boundaries(week)
+            if week_boundaries:
+                return week_boundaries['start_date'], week_boundaries['end_date']
+                
+        except Exception as e:
+            self.logger.warning(f"Could not get week boundaries from ESPN: {e}")
         
-        # 2024 season reference (adjust yearly)
+        # Fallback: Use current games to infer week boundaries
+        try:
+            # Get all current games without date filter
+            all_games = self._fetch_all_current_games()
+            if all_games:
+                # Group games by week and find the date range for requested week
+                week_games = self._group_games_by_week(all_games)
+                if week in week_games and week_games[week]:
+                    game_dates = [game['commence_time'] for game in week_games[week]]
+                    start_date = min(game_dates)
+                    end_date = max(game_dates) + timedelta(hours=6)  # Add buffer for late games
+                    return start_date, end_date
+        except Exception as e:
+            self.logger.warning(f"Could not infer week boundaries from games: {e}")
+        
+        # Ultimate fallback: Return a wide date range
         current_year = datetime.now().year
-        season_start = datetime(current_year, 8, 24)  # Approximate Week 1 start
+        season_start = datetime(current_year, 8, 15)  # Conservative early start
+        season_end = datetime(current_year + 1, 1, 31)  # Through bowl season
+        return season_start, season_end
+    
+    def _fetch_all_current_games(self) -> List[Dict]:
+        """Fetch all current games without date filtering to infer week boundaries."""
+        try:
+            params = {
+                'apiKey': self.api_key,
+                'regions': ','.join(self.regions),
+                'markets': ','.join(self.markets),
+                'oddsFormat': 'american',
+                'dateFormat': 'iso'
+            }
+            
+            url = f"{self.base_url}/sports/{self.sport}/odds"
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data if isinstance(data, list) else []
+            else:
+                return []
+        except Exception as e:
+            self.logger.warning(f"Error fetching current games: {e}")
+            return []
+    
+    def _group_games_by_week(self, games: List[Dict]) -> Dict[int, List[Dict]]:
+        """Group games by CFB week based on commence times."""
+        week_games = {}
         
-        # Calculate week start (weeks are Saturday to Friday)
-        week_start = season_start + timedelta(weeks=week-1)
-        week_end = week_start + timedelta(days=6, hours=23, minutes=59)
+        for game in games:
+            try:
+                commence_time_str = game.get('commence_time')
+                if not commence_time_str:
+                    continue
+                    
+                commence_time = datetime.fromisoformat(commence_time_str.replace('Z', '+00:00'))
+                
+                # Determine CFB week based on date
+                # This is a simplified approach - games are typically grouped by Saturday
+                # Week boundaries are roughly Saturday to Friday
+                week_num = self._determine_cfb_week_from_date(commence_time)
+                
+                if week_num not in week_games:
+                    week_games[week_num] = []
+                
+                game_copy = game.copy()
+                game_copy['commence_time'] = commence_time
+                week_games[week_num].append(game_copy)
+                
+            except Exception as e:
+                self.logger.debug(f"Error processing game for week grouping: {e}")
+                continue
         
-        return week_start, week_end
+        return week_games
+    
+    def _determine_cfb_week_from_date(self, game_date: datetime) -> int:
+        """Determine CFB week number from game date."""
+        # Find the first Saturday of the CFB season from current games
+        # This is dynamic and based on actual data
+        current_year = game_date.year
+        
+        # Start looking from mid-August for the first CFB games
+        search_start = datetime(current_year, 8, 15)
+        
+        # Count weeks from the earliest games we can find
+        days_since_season_start = (game_date.date() - search_start.date()).days
+        week_num = max(1, (days_since_season_start // 7) + 1)
+        
+        # Cap at 17 weeks (including bowl season)
+        return min(week_num, 17)
     
     def get_api_usage(self) -> Dict[str, Any]:
         """

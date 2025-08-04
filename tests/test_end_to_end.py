@@ -14,7 +14,7 @@ from main import main, parse_arguments
 from engine.prediction_engine import prediction_engine
 from data.data_manager import data_manager
 from factors.factor_registry import factor_registry
-from normalizer import normalizer
+from utils.normalizer import normalizer
 from config import config
 from utils.health_check import health_checker
 from utils.monitoring import system_monitor

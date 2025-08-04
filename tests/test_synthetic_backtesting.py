@@ -13,7 +13,7 @@ import statistics
 
 from engine.prediction_engine import prediction_engine
 from factors.factor_registry import factor_registry
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class SyntheticGame:

@@ -351,7 +351,7 @@ class ErrorHandler:
             dict: Minimal prediction result
         """
         try:
-            from normalizer import normalizer
+            from utils.normalizer import normalizer
             
             # Try to normalize team names
             home_normalized = normalizer.normalize(home_team)

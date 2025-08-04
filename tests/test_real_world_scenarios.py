@@ -15,7 +15,7 @@ from factors.factor_registry import factor_registry
 from data.data_manager import data_manager
 from output.formatter import output_formatter
 from output.insights_generator import insights_generator
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class TestRealWorldScenarios(unittest.TestCase):

@@ -13,13 +13,59 @@ import logging
 import time
 from typing import Optional, Dict, Any
 
-from config import config
-from normalizer import normalizer
-from data.data_manager import data_manager
-from data.schedule_client import CFBScheduleClient
-from engine.prediction_engine import prediction_engine
-from engine.confidence_calculator import confidence_calculator
-from engine.edge_detector import edge_detector
+# Heavy imports moved to main() to allow logging setup first
+# Global variables for lazy loading
+config = None
+normalizer = None  
+data_manager = None
+prediction_engine = None
+confidence_calculator = None
+edge_detector = None
+
+def _ensure_imports():
+    """Ensure all heavy modules are imported."""
+    global config, normalizer, data_manager, prediction_engine, confidence_calculator, edge_detector
+    if config is None:
+        from config import config as _config
+        from utils.normalizer import normalizer as _normalizer
+        from data.data_manager import data_manager as _data_manager
+        from engine.prediction_engine import prediction_engine as _prediction_engine
+        from engine.confidence_calculator import confidence_calculator as _confidence_calculator
+        from engine.edge_detector import edge_detector as _edge_detector
+        
+        config = _config
+        normalizer = _normalizer
+        data_manager = _data_manager
+        prediction_engine = _prediction_engine
+        confidence_calculator = _confidence_calculator
+        edge_detector = _edge_detector
+
+
+def _get_current_week() -> int:
+    """Get the current CFB week based on date."""
+    from datetime import datetime
+    
+    # For August 2025, we're at the start of the season
+    # Let's default to week 1 for current testing
+    now = datetime.now()
+    
+    if now.month == 8:  # August - pre-season/early season
+        return 1  # Week 1
+    elif now.month >= 9:  # September-December
+        # Rough approximation: Week 1 starts Sept 1, each week is 7 days
+        week = ((now.day - 1) // 7) + 1
+        if now.month == 9:
+            return min(week, 4)  # Sept has weeks 1-4
+        elif now.month == 10:
+            return min(week + 4, 8)  # Oct has weeks 5-8
+        elif now.month == 11:
+            return min(week + 8, 12)  # Nov has weeks 9-12
+        else:  # December
+            return min(week + 12, 16)  # Dec has weeks 13-16
+    elif now.month == 1:  # January - bowl season
+        return 17  # Bowl week
+    else:
+        return 1  # Default to week 1
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -208,11 +254,18 @@ def setup_logging(debug: bool = False, quiet: bool = False) -> None:
         level = logging.INFO
     
     # Override config logging for CLI
-    logging.basicConfig(
-        level=level,
-        format='%(levelname)s: %(message)s' if not debug else '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        force=True  # Override any existing logging config
-    )
+    if quiet:
+        # Completely disable all logging for clean output
+        logging.disable(logging.CRITICAL)
+        # Also suppress warnings
+        import warnings
+        warnings.filterwarnings('ignore')
+    else:
+        logging.basicConfig(
+            level=level,
+            format='%(levelname)s: %(message)s' if not debug else '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            force=True  # Override any existing logging config
+        )
 
 
 def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optional[str]]:
@@ -226,6 +279,7 @@ def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optio
     Returns:
         tuple: (normalized_home, normalized_away) or (None, None) if invalid
     """
+    _ensure_imports()
     normalized_home = normalizer.normalize(home_team)
     normalized_away = normalizer.normalize(away_team)
     
@@ -248,6 +302,7 @@ def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optio
 
 def list_teams() -> None:
     """Display all supported team names and aliases."""
+    _ensure_imports()
     print("CFB Contrarian Predictor - Supported Teams")
     print("=" * 50)
     print()
@@ -290,6 +345,7 @@ def list_teams() -> None:
 
 def validate_team_name(team_name: str) -> None:
     """Validate a single team name and show normalization."""
+    _ensure_imports()
     normalized = normalizer.normalize(team_name)
     
     if normalized:
@@ -391,6 +447,7 @@ def check_configuration() -> bool:
     Returns:
         bool: True if configuration is valid
     """
+    _ensure_imports()
     print("CFB Contrarian Predictor - Configuration Check")
     print("=" * 50)
     
@@ -462,6 +519,7 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
     Returns:
         dict: Prediction results
     """
+    _ensure_imports()
     print(f"\nAnalyzing: {away_team} @ {home_team}")
     if week:
         print(f"Week: {week}")
@@ -658,79 +716,165 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
 
 def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
     """
-    Analyze all games for a specified week.
+    Analyze all games for a specified week, focusing on Power 4 conferences.
     
     Args:
         week: Week number to analyze
         min_edge: Minimum edge size to display
     """
-    print(f"\nAnalyzing Week {week} Games (edges >= {min_edge} points)")
+    _ensure_imports()
+    print(f"\nWeek {week} Power 4 Conference Games")
     print("=" * 60)
     
     try:
-        # Check if we have odds data capability
-        if not data_manager.odds_client:
-            print("❌ Odds API not available - cannot fetch weekly games")
-            print("   Configure ODDS_API_KEY to enable weekly analysis")
-            return
+        # Get all games from multiple sources
+        all_games = []
         
-        print("📊 Fetching weekly games...")
-        weekly_data = data_manager.odds_client.get_weekly_spreads(week)
-        
-        games = weekly_data.get('games', [])
-        if not games:
-            print(f"📭 No games found for Week {week}")
-            return
-        
-        print(f"🏈 Found {len(games)} games for Week {week}")
-        print()
-        
-        # Analyze each game (simplified for now)
-        analyzed_games = []
-        
-        for game in games:
-            home_team = game.get('home_team')
-            away_team = game.get('away_team')
-            spread = game.get('consensus_spread')
+        # Try to get games with betting lines first
+        if data_manager.odds_client:
+            weekly_data = data_manager.odds_client.get_weekly_spreads(week)
+            betting_games = weekly_data.get('games', [])
             
-            if home_team and away_team:
-                print(f"📋 {away_team} @ {home_team}", end="")
-                if spread is not None:
-                    print(f" (Spread: {home_team} {spread:+.1f})")
-                else:
-                    print(" (No spread)")
-                
-                # For Week 2, just show data availability
-                availability = data_manager.validate_data_availability(home_team, away_team)
-                quality_score = sum(availability.values()) / len(availability)
-                print(f"   Data Quality: {quality_score:.1%}")
-                
-                analyzed_games.append({
-                    'home_team': home_team,
-                    'away_team': away_team,
-                    'spread': spread,
-                    'quality': quality_score
+            for game in betting_games:
+                all_games.append({
+                    'home_team': game.get('home_team'),
+                    'away_team': game.get('away_team'),
+                    'spread': game.get('consensus_spread'),
+                    'has_line': True
                 })
-                print()
+        
+        # Note: Additional game sources could be added here in the future
+        # (ESPN Schedule API, etc.) but only with real API data
+        
+        # Power 4 conference teams (accurate as of 2024 season)
+        power4_teams = {
+            'SEC': ['ALABAMA', 'ARKANSAS', 'AUBURN', 'FLORIDA', 'GEORGIA', 'KENTUCKY', 
+                   'LSU', 'MISSISSIPPI', 'MISSISSIPPI STATE', 'MISSOURI', 'SOUTH CAROLINA', 
+                   'TENNESSEE', 'TEXAS', 'TEXAS A&M', 'VANDERBILT', 'OKLAHOMA'],
+            'BIG TEN': ['ILLINOIS', 'INDIANA', 'IOWA', 'MARYLAND', 'MICHIGAN', 'MICHIGAN STATE',
+                       'MINNESOTA', 'NEBRASKA', 'NORTHWESTERN', 'OHIO STATE', 'PENN STATE',
+                       'PURDUE', 'RUTGERS', 'WISCONSIN', 'UCLA', 'USC', 'OREGON', 'WASHINGTON'],
+            'BIG 12': ['ARIZONA', 'ARIZONA STATE', 'BAYLOR', 'CINCINNATI', 'COLORADO', 'HOUSTON',
+                      'IOWA STATE', 'KANSAS', 'KANSAS STATE', 'OKLAHOMA STATE', 'TCU', 'TEXAS TECH',
+                      'UCF', 'UTAH', 'WEST VIRGINIA', 'BYU'],
+            'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH', 'LOUISVILLE',
+                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITT', 'SYRACUSE',
+                   'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'CALIFORNIA', 'STANFORD', 'SMU'],
+            'INDEPENDENT': ['NOTRE DAME', 'UCONN']  # Football independents that we track
+        }
+        
+        # Filter to Power 4 games only
+        power4_games = []
+        all_power4_teams = set()
+        for conf_teams in power4_teams.values():
+            all_power4_teams.update(conf_teams)
+        
+        for game in all_games:
+            home = game.get('home_team', '').upper()
+            away = game.get('away_team', '').upper()
+            
+            # Check if at least one team is Power 4 (includes independents like Notre Dame)
+            if home in all_power4_teams or away in all_power4_teams:
+                # Determine conference matchup type
+                home_conf = None
+                away_conf = None
+                for conf, teams in power4_teams.items():
+                    if home in teams:
+                        home_conf = conf
+                    if away in teams:
+                        away_conf = conf
+                
+                game['home_conf'] = home_conf
+                game['away_conf'] = away_conf
+                
+                # Conference game only if both teams are in the same actual conference
+                # (Independent teams can never play "conference" games)
+                is_conference_game = (home_conf == away_conf and 
+                                    home_conf is not None and 
+                                    home_conf != 'INDEPENDENT')
+                
+                game['matchup_type'] = 'Conference' if is_conference_game else 'Non-Conference'
+                power4_games.append(game)
+        
+        if not power4_games:
+            print("📭 No Power 4 games found for this week")
+            print("   This might be an off-week or the season hasn't started yet")
+            return
+        
+        # Sort games by conference matchup type, then by spread size
+        power4_games.sort(key=lambda x: (
+            x['matchup_type'] != 'Conference',  # Conference games first
+            x['home_conf'] or 'ZZZ',  # Then by home team conference
+            -(abs(x['spread']) if x['spread'] is not None else 0)  # Then by spread size
+        ))
+        
+        # Display games in simple list format
+        _display_games_simple(power4_games)
         
         # Summary
-        print("=" * 60)
-        print(f"📈 Weekly Summary:")
-        print(f"   Total games: {len(analyzed_games)}")
+        print("-" * 60)
         
-        games_with_spreads = sum(1 for g in analyzed_games if g['spread'] is not None)
-        print(f"   Games with spreads: {games_with_spreads}")
+        conf_games = [g for g in power4_games if g['matchup_type'] == 'Conference']
+        non_conf_games = [g for g in power4_games if g['matchup_type'] == 'Non-Conference']
+        games_with_lines = [g for g in power4_games if g['spread'] is not None]
         
-        if analyzed_games:
-            avg_quality = sum(g['quality'] for g in analyzed_games) / len(analyzed_games)
-            print(f"   Average data quality: {avg_quality:.1%}")
+        print(f"📊 Summary: {len(power4_games)} Power 4 games this week")
+        print(f"   • {len(conf_games)} conference games")  
+        print(f"   • {len(non_conf_games)} non-conference games")
         
-        print(f"\n🚧 Factor analysis will be available in Week 3-4")
-        print(f"   Current implementation shows data availability only")
+        if games_with_lines:
+            print(f"\n💡 Analyze individual games:")
+            for game in games_with_lines[:2]:  # Show first 2 examples
+                print(f"   python main.py --home \"{game['home_team']}\" --away \"{game['away_team']}\"")
+            if len(games_with_lines) > 2:
+                print(f"   (... {len(games_with_lines) - 2} more games available)")
         
     except Exception as e:
         print(f"❌ Error in weekly analysis: {e}")
         print("   Check your API configuration and try again")
+
+
+def _display_games_simple(games):
+    """Display games in a simple, terminal-friendly format."""
+    print("\n🏈 Power 4 Conference Games:")
+    print("-" * 60)
+    
+    for i, game in enumerate(games, 1):
+        away_team = game['away_team']
+        home_team = game['home_team']
+        
+        # Create matchup string
+        matchup = f"{away_team} @ {home_team}"
+        
+        # Format spread
+        if game['spread'] is not None:
+            if game['spread'] > 0:
+                line = f"{home_team} -{game['spread']}"
+            elif game['spread'] < 0:
+                line = f"{away_team} -{abs(game['spread'])}"
+            else:
+                line = "Pick'em"
+        else:
+            line = "No line"
+        
+        # Print game with clear formatting
+        print(f"{i:2d}. {matchup}")
+        print(f"    Line: {line}")
+        
+        # Add conference context
+        if game.get('matchup_type') == 'Conference':
+            print(f"    Type: Conference game ({game.get('home_conf', 'Unknown')})")
+        else:
+            # Show if any team is independent
+            home_conf = game.get('home_conf')
+            away_conf = game.get('away_conf')
+            if home_conf == 'INDEPENDENT' or away_conf == 'INDEPENDENT':
+                independent_team = away_team if away_conf == 'INDEPENDENT' else home_team
+                print(f"    Type: Non-conference (vs Independent)")
+            else:
+                print(f"    Type: Non-conference")
+        
+        print()  # Empty line between games
 
 
 def main() -> int:
@@ -744,8 +888,12 @@ def main() -> int:
         # Parse arguments
         args = parse_arguments()
         
-        # Setup logging
+        # Setup logging FIRST
         setup_logging(args.debug, args.quiet)
+        
+        # Import heavy modules after logging is configured
+        _ensure_imports()
+        from data.schedule_client import CFBScheduleClient
         
         if args.debug:
             logging.debug(f"Arguments: {args}")
@@ -805,9 +953,10 @@ def main() -> int:
                     }
                 print(json.dumps(json_result, indent=2, default=str))
         
-        elif args.analyze_week:
-            # Run weekly analysis
-            run_weekly_analysis(args.analyze_week, args.min_edge)
+        elif args.analyze_week is not None:
+            # Run weekly analysis - if week is 0, use current week logic
+            week_to_analyze = args.analyze_week if args.analyze_week != 0 else _get_current_week()
+            run_weekly_analysis(week_to_analyze, args.min_edge)
         
         # Performance timing
         execution_time = time.time() - start_time

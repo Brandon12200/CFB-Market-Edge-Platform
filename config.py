@@ -84,10 +84,12 @@ class Config:
     
     def _setup_logging(self) -> None:
         """Configure logging based on configuration settings."""
-        logging.basicConfig(
-            level=getattr(logging, self.log_level),
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        # Only set up logging if it hasn't been configured yet
+        if not logging.getLogger().handlers:
+            logging.basicConfig(
+                level=getattr(logging, self.log_level),
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
         
         if self.debug:
             logging.getLogger().setLevel(logging.DEBUG)

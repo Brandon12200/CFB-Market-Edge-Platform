@@ -16,7 +16,7 @@ import concurrent.futures
 from config import config
 from data.odds_client import OddsAPIClient
 from data.espn_client import ESPNStatsClient
-from normalizer import normalizer
+from utils.normalizer import normalizer
 from utils.rate_limiter import RateLimiter
 
 

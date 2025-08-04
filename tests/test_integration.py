@@ -12,7 +12,7 @@ from engine.prediction_engine import prediction_engine
 from engine.confidence_calculator import confidence_calculator
 from engine.edge_detector import edge_detector, EdgeType
 from data.data_manager import data_manager
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class TestPredictionPipeline(unittest.TestCase):

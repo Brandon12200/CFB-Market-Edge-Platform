@@ -10,7 +10,7 @@ from datetime import datetime
 from config import config
 from data.data_manager import data_manager
 from factors.factor_registry import factor_registry
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class PredictionEngine:

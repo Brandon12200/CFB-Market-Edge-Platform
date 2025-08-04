@@ -452,7 +452,7 @@ class TestCacheIntegration(unittest.TestCase):
     
     def test_cache_with_normalizer(self):
         """Test cache integration with team name normalizer."""
-        from normalizer import normalizer
+        from utils.normalizer import normalizer
         
         cache_manager = CacheManager()
         

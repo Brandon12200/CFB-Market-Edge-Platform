@@ -13,7 +13,7 @@ import json
 from config import config
 from utils.rate_limiter import rate_limiter_manager, setup_api_rate_limiters
 from data.cache_manager import cache_manager
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class ESPNStatsClient:
@@ -720,6 +720,140 @@ class ESPNStatsClient:
             'last_updated': datetime.now().isoformat()
         }
     
+    def get_week_boundaries(self, week: int) -> Optional[Dict[str, datetime]]:
+        """
+        Get date boundaries for a specific CFB week from ESPN schedule data.
+        
+        Args:
+            week: Week number (1-17)
+            
+        Returns:
+            Dictionary with 'start_date' and 'end_date' datetime objects, or None if not found
+        """
+        try:
+            # Rate limiting
+            self.rate_limiter.wait_if_needed()
+            
+            # Fetch current season schedule/scoreboard to determine week boundaries
+            current_year = datetime.now().year
+            url = f"{self.base_url}/scoreboard"
+            
+            # Try to get schedule data for the current season
+            params = {
+                'seasontype': 2,  # Regular season
+                'week': week,
+                'year': current_year
+            }
+            
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                events = data.get('events', [])
+                
+                if events:
+                    # Extract game dates from this week's events
+                    game_dates = []
+                    for event in events:
+                        event_date = event.get('date')
+                        if event_date:
+                            try:
+                                # Parse ESPN date format
+                                game_date = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                                game_dates.append(game_date)
+                            except Exception as e:
+                                self.logger.debug(f"Error parsing date {event_date}: {e}")
+                                continue
+                    
+                    if game_dates:
+                        # Calculate week boundaries
+                        earliest_game = min(game_dates)
+                        latest_game = max(game_dates)
+                        
+                        # Week typically starts on Tuesday and ends on Monday
+                        # But we'll use the actual game dates with some buffer
+                        start_date = earliest_game - timedelta(days=2)  # Start 2 days before first game
+                        end_date = latest_game + timedelta(hours=6)     # End 6 hours after last game
+                        
+                        # Handle Week 0 + Week 1 grouping
+                        if week == 1:
+                            # For Week 1, also include Week 0 games
+                            week0_data = self.get_week_boundaries(0)
+                            if week0_data:
+                                start_date = min(start_date, week0_data['start_date'])
+                        
+                        self.logger.debug(f"Found ESPN week {week} boundaries: {start_date} to {end_date}")
+                        return {
+                            'start_date': start_date,
+                            'end_date': end_date
+                        }
+            
+            # Fallback: Try Week 0 if Week 1 request failed
+            if week == 1:
+                params['week'] = 0
+                response = self.session.get(url, params=params, timeout=30)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    events = data.get('events', [])
+                    
+                    if events:
+                        game_dates = []
+                        for event in events:
+                            event_date = event.get('date')
+                            if event_date:
+                                try:
+                                    game_date = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                                    game_dates.append(game_date)
+                                except Exception:
+                                    continue
+                        
+                        if game_dates:
+                            earliest_game = min(game_dates)
+                            latest_game = max(game_dates)
+                            
+                            # Extend to cover both Week 0 and Week 1
+                            start_date = earliest_game - timedelta(days=2)
+                            
+                            # Try to get Week 1 end date
+                            self.rate_limiter.wait_if_needed()
+                            params['week'] = 1
+                            week1_response = self.session.get(url, params=params, timeout=30)
+                            
+                            if week1_response.status_code == 200:
+                                week1_data = week1_response.json()
+                                week1_events = week1_data.get('events', [])
+                                
+                                week1_dates = []
+                                for event in week1_events:
+                                    event_date = event.get('date')
+                                    if event_date:
+                                        try:
+                                            game_date = datetime.fromisoformat(event_date.replace('Z', '+00:00'))
+                                            week1_dates.append(game_date)
+                                        except Exception:
+                                            continue
+                                
+                                if week1_dates:
+                                    end_date = max(week1_dates) + timedelta(hours=6)
+                                else:
+                                    end_date = latest_game + timedelta(hours=6)
+                            else:
+                                end_date = latest_game + timedelta(hours=6)
+                            
+                            self.logger.debug(f"Found ESPN Week 0+1 boundaries: {start_date} to {end_date}")
+                            return {
+                                'start_date': start_date,
+                                'end_date': end_date
+                            }
+            
+            self.logger.warning(f"Could not find ESPN schedule data for week {week}")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching ESPN week boundaries for week {week}: {e}")
+            return None
+
     def test_connection(self) -> bool:
         """
         Test ESPN API connection.

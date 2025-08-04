@@ -13,7 +13,7 @@ import json
 from config import config
 from utils.rate_limiter import rate_limiter_manager
 from data.cache_manager import cache_manager
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 class CFBScheduleClient:

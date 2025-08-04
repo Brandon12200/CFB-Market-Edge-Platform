@@ -106,3 +106,4 @@ implementation_plan.md
 
 # Virtual Environment
 venv/
+htmlcov/

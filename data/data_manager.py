@@ -12,7 +12,7 @@ from config import config
 from data.odds_client import OddsAPIClient
 from data.espn_client import ESPNStatsClient
 from data.cache_manager import cache_manager
-from normalizer import normalizer
+from utils.normalizer import normalizer
 
 
 def safe_api_call(fallback_value=None):
