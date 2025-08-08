@@ -11,6 +11,7 @@ from datetime import datetime
 from config import config
 from data.odds_client import OddsAPIClient
 from data.espn_client import ESPNStatsClient
+from data.cfbd_client import get_cfbd_client
 from data.cache_manager import cache_manager
 from utils.normalizer import normalizer
 
@@ -57,8 +58,9 @@ class DataManager:
         """
         self.config = config_obj or config
         
-        # Initialize API clients
+        # Initialize API clients (CFBD primary, ESPN fallback)
         self.odds_client = None
+        self.cfbd_client = None
         self.espn_client = ESPNStatsClient()
         
         # Initialize odds client only if API key is available
@@ -67,6 +69,15 @@ class DataManager:
                 self.odds_client = OddsAPIClient(self.config.odds_api_key)
             except Exception as e:
                 logging.warning(f"Failed to initialize Odds API client: {e}")
+        
+        # Initialize CFBD client as primary data source
+        if self.config.cfbd_api_key:
+            try:
+                self.cfbd_client = get_cfbd_client()
+            except Exception as e:
+                logging.warning(f"Failed to initialize CFBD API client: {e}")
+        else:
+            logging.warning("CFBD API key not configured - primary data source unavailable")
         
         # Cache manager
         self.cache = cache_manager
@@ -80,7 +91,7 @@ class DataManager:
         # Fallback data structures
         self._fallback_data = self._initialize_fallback_data()
         
-        self.logger.info(f"Data manager initialized - Odds API: {'✓' if self.odds_client else '✗'}, ESPN API: ✓")
+        self.logger.info(f"Data manager initialized - CFBD API (Primary): {'✓' if self.cfbd_client else '✗'}, ESPN API (Fallback): ✓, Odds API: {'✓' if self.odds_client else '✗'}")
     
     @safe_api_call(fallback_value={})
     def get_game_context(self, home_team: str, away_team: str, week: Optional[int] = None) -> Dict[str, Any]:
@@ -133,7 +144,11 @@ class DataManager:
         # Get team data for both teams
         context['home_team_data'] = self.get_team_data(home_team)
         context['away_team_data'] = self.get_team_data(away_team)
-        context['data_sources'].append('espn_api')
+        
+        # Determine primary data source used
+        if self.cfbd_client:
+            context['data_sources'].append('cfbd_api_primary')
+        context['data_sources'].append('espn_api_fallback')
         
         # Get coaching comparison
         context['coaching_comparison'] = self.get_coaching_comparison(home_team, away_team)
@@ -171,20 +186,46 @@ class DataManager:
         team_data = {
             'team_name': team_name,
             'last_updated': datetime.now().isoformat(),
-            'data_sources': ['espn_api']
+            'data_sources': []
         }
         
-        # Fetch each data type
+        # Fetch each data type (CFBD primary, ESPN fallback)
         for data_type in data_types:
             try:
                 if data_type == 'info':
+                    # ESPN is still primary for basic team info
                     team_data['info'] = self.espn_client.get_team_info(team_name)
+                    team_data['data_sources'].append('espn_info')
                 elif data_type == 'coaching':
-                    team_data['coaching'] = self.espn_client.get_coaching_data(team_name)
+                    # Use CFBD first for coaching data
+                    if self.cfbd_client:
+                        team_data['coaching'] = self.cfbd_client.get_coaching_data(team_name)
+                        if team_data['coaching'].get('status') == 'cfbd_data':
+                            team_data['data_sources'].append('cfbd_coaching')
+                        else:
+                            # Fallback to ESPN if CFBD failed
+                            team_data['coaching'] = self.espn_client.get_coaching_data(team_name)
+                            team_data['data_sources'].append('espn_coaching_fallback')
+                    else:
+                        team_data['coaching'] = self.espn_client.get_coaching_data(team_name)
+                        team_data['data_sources'].append('espn_coaching')
                 elif data_type == 'stats':
-                    team_data['stats'] = self.espn_client.get_team_stats(team_name)
+                    # Use CFBD first for team stats
+                    if self.cfbd_client:
+                        team_data['stats'] = self.cfbd_client.get_team_stats(team_name)
+                        if team_data['stats'].get('status') == 'cfbd_data':
+                            team_data['data_sources'].append('cfbd_stats')
+                        else:
+                            # Fallback to ESPN if CFBD failed
+                            team_data['stats'] = self.espn_client.get_team_stats(team_name)
+                            team_data['data_sources'].append('espn_stats_fallback')
+                    else:
+                        team_data['stats'] = self.espn_client.get_team_stats(team_name)
+                        team_data['data_sources'].append('espn_stats')
                 elif data_type == 'schedule':
+                    # ESPN is still primary for schedule data
                     team_data['schedule'] = self.espn_client.get_team_schedule(team_name)
+                    team_data['data_sources'].append('espn_schedule')
                 
                 self.logger.debug(f"Retrieved {data_type} data for {team_name}")
                 
@@ -204,6 +245,7 @@ class DataManager:
     def get_coaching_comparison(self, home_team: str, away_team: str) -> Dict[str, Any]:
         """
         Get coaching comparison between two teams.
+        Uses CFBD API as primary source with ESPN fallback.
         
         Args:
             home_team: Normalized home team name
@@ -212,9 +254,54 @@ class DataManager:
         Returns:
             Dictionary with coaching comparison data
         """
-        # Get coaching data for both teams
-        home_coaching = self.espn_client.get_coaching_data(home_team)
-        away_coaching = self.espn_client.get_coaching_data(away_team)
+        # Try CFBD first as primary source
+        home_coaching = None
+        away_coaching = None
+        
+        if self.cfbd_client:
+            try:
+                self.logger.debug(f"Using CFBD primary for {home_team} coaching data")
+                home_coaching = self.cfbd_client.get_coaching_data(home_team)
+                
+                self.logger.debug(f"Using CFBD primary for {away_team} coaching data")
+                away_coaching = self.cfbd_client.get_coaching_data(away_team)
+                
+            except Exception as e:
+                self.logger.warning(f"CFBD coaching data failed: {e}")
+        
+        # Fallback to ESPN for any missing or failed data
+        home_needs_espn_fallback = (
+            home_coaching is None or 
+            home_coaching.get('status') == 'default_fallback' or 
+            home_coaching.get('head_coach_experience', 0) <= 1
+        )
+        away_needs_espn_fallback = (
+            away_coaching is None or 
+            away_coaching.get('status') == 'default_fallback' or 
+            away_coaching.get('head_coach_experience', 0) <= 1
+        )
+        
+        if home_needs_espn_fallback:
+            self.logger.debug(f"Using ESPN fallback for {home_team} coaching data")
+            espn_home_coaching = self.espn_client.get_coaching_data(home_team)
+            if espn_home_coaching.get('status') != 'neutral_fallback':
+                home_coaching = espn_home_coaching
+            elif home_coaching is None:
+                home_coaching = espn_home_coaching  # Use even neutral fallback if no CFBD data
+        
+        if away_needs_espn_fallback:
+            self.logger.debug(f"Using ESPN fallback for {away_team} coaching data")
+            espn_away_coaching = self.espn_client.get_coaching_data(away_team)
+            if espn_away_coaching.get('status') != 'neutral_fallback':
+                away_coaching = espn_away_coaching
+            elif away_coaching is None:
+                away_coaching = espn_away_coaching  # Use even neutral fallback if no CFBD data
+        
+        # Ensure we have data (fallback to neutral if both failed)
+        if home_coaching is None:
+            home_coaching = self._get_neutral_data_structure('coaching', home_team)
+        if away_coaching is None:
+            away_coaching = self._get_neutral_data_structure('coaching', away_team)
         
         comparison = {
             'home_team': home_team,
@@ -223,8 +310,20 @@ class DataManager:
             'away_coaching': away_coaching,
             'experience_differential': self._calculate_experience_differential(home_coaching, away_coaching),
             'head_to_head_record': self._get_head_to_head_coaching_record(home_team, away_team),
+            'data_sources': [],
             'last_updated': datetime.now().isoformat()
         }
+        
+        # Track data sources used
+        if home_coaching.get('status') == 'cfbd_data':
+            comparison['data_sources'].append('cfbd_home_coaching')
+        elif home_coaching.get('status') != 'neutral_fallback':
+            comparison['data_sources'].append('espn_home_coaching')
+            
+        if away_coaching.get('status') == 'cfbd_data':
+            comparison['data_sources'].append('cfbd_away_coaching')
+        elif away_coaching.get('status') != 'neutral_fallback':
+            comparison['data_sources'].append('espn_away_coaching')
         
         return comparison
     
@@ -496,7 +595,17 @@ class DataManager:
         """
         results = {}
         
-        # Test ESPN API
+        # Test CFBD API (primary)
+        if self.cfbd_client:
+            try:
+                results['cfbd_api'] = self.cfbd_client.test_connection()
+            except Exception as e:
+                self.logger.error(f"CFBD API test failed: {e}")
+                results['cfbd_api'] = False
+        else:
+            results['cfbd_api'] = False
+        
+        # Test ESPN API (fallback)
         try:
             results['espn_api'] = self.espn_client.test_connection()
         except Exception as e:

@@ -125,7 +125,9 @@ class PredictionEngine:
                                        factor_results: Dict[str, Any], 
                                        context: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate the contrarian prediction using factor adjustments."""
+        # Get both additive and multiplicative adjustments
         total_adjustment = factor_results['summary']['total_adjustment']
+        multiplicative_adjustment = factor_results['summary'].get('multiplicative_adjustment', 1.0)
         
         # If no Vegas spread available, can't make a contrarian prediction
         if vegas_spread is None:
@@ -139,27 +141,41 @@ class PredictionEngine:
             }
         
         # Apply factor adjustments to Vegas spread
-        contrarian_spread = vegas_spread + total_adjustment
+        # First apply additive, then multiplicative
+        contrarian_spread = (vegas_spread + total_adjustment) * multiplicative_adjustment
         
         # Calculate edge size (difference between Vegas and our prediction)
-        edge_size = abs(total_adjustment)
+        edge_size = abs(contrarian_spread - vegas_spread)
         
         # Determine edge direction
-        if total_adjustment > 0:
+        adjustment_diff = contrarian_spread - vegas_spread
+        if adjustment_diff > 0:
             edge_direction = 'home'  # Our prediction favors home team more than Vegas
-        elif total_adjustment < 0:
+        elif adjustment_diff < 0:
             edge_direction = 'away'  # Our prediction favors away team more than Vegas
         else:
             edge_direction = 'neutral'
         
-        # Determine if this constitutes a meaningful edge
-        min_edge_threshold = 1.0  # Minimum 1 point edge for consideration
+        # Adjust thresholds based on confidence and primary signals
+        avg_confidence = factor_results['summary'].get('avg_confidence', 0.5)
+        primary_signals = factor_results['summary'].get('primary_signals', 0)
+        
+        # Dynamic edge threshold based on confidence
+        if primary_signals >= 2 and avg_confidence >= 0.7:
+            min_edge_threshold = 0.75  # Lower threshold for high-confidence primary signals
+        elif primary_signals >= 1 or avg_confidence >= 0.6:
+            min_edge_threshold = 1.0  # Standard threshold
+        else:
+            min_edge_threshold = 1.5  # Higher threshold for low-confidence signals
+        
         has_edge = edge_size >= min_edge_threshold
         
-        # Classify prediction type
-        if edge_size >= 3.0:
+        # Classify prediction type with confidence-based adjustments
+        if primary_signals >= 2 and edge_size >= 2.5:
+            prediction_type = 'VERY_STRONG_CONTRARIAN'
+        elif edge_size >= 3.0 or (edge_size >= 2.0 and avg_confidence >= 0.7):
             prediction_type = 'STRONG_CONTRARIAN'
-        elif edge_size >= 1.5:
+        elif edge_size >= 1.5 or (edge_size >= 1.0 and avg_confidence >= 0.6):
             prediction_type = 'MODERATE_CONTRARIAN'
         elif edge_size >= 0.5:
             prediction_type = 'SLIGHT_CONTRARIAN'
@@ -169,6 +185,8 @@ class PredictionEngine:
         return {
             'contrarian_spread': contrarian_spread,
             'edge_size': edge_size,
+            'adjustment_diff': adjustment_diff,
+            'multiplicative_effect': multiplicative_adjustment,
             'edge_direction': edge_direction,
             'has_edge': has_edge,
             'prediction_type': prediction_type,

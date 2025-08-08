@@ -20,6 +20,7 @@ class Config:
         # API Configuration
         self.odds_api_key = os.getenv('ODDS_API_KEY')
         self.espn_api_key = os.getenv('ESPN_API_KEY', None)  # Optional
+        self.cfbd_api_key = os.getenv('CFBD_API_KEY', None)  # College Football Data API
         
         # Application Settings
         self.debug = os.getenv('DEBUG', 'false').lower() == 'true'
@@ -28,6 +29,7 @@ class Config:
         # Rate Limiting (calls per time period)
         self.rate_limit_odds = int(os.getenv('ODDS_API_RATE_LIMIT', '83'))  # calls per day
         self.rate_limit_espn = int(os.getenv('ESPN_API_RATE_LIMIT', '60'))  # calls per minute
+        self.rate_limit_cfbd = int(os.getenv('CFBD_API_RATE_LIMIT', '150'))  # calls per day (Tier 1)
         
         # Cache Configuration
         self.cache_ttl = int(os.getenv('CACHE_TTL', '3600'))  # 1 hour default
@@ -99,11 +101,24 @@ class Config:
         Validate API keys and return status.
         
         Returns:
-            dict: Status of each API key
+            dict: Status of each API key with primary/fallback indicators
         """
         status = {
-            'odds_api': bool(self.odds_api_key),
-            'espn_api': bool(self.espn_api_key) if self.espn_api_key else 'optional'
+            'cfbd_api': {
+                'configured': bool(self.cfbd_api_key),
+                'role': 'primary',
+                'description': 'College Football Data API - Primary source for coaching/stats data'
+            },
+            'espn_api': {
+                'configured': True,  # Always available as fallback
+                'role': 'fallback', 
+                'description': 'ESPN API - Fallback for team data and schedule info'
+            },
+            'odds_api': {
+                'configured': bool(self.odds_api_key),
+                'role': 'required',
+                'description': 'Odds API - Required for betting lines and spreads'
+            }
         }
         return status
     
@@ -112,7 +127,7 @@ class Config:
         Get rate limit for specified API.
         
         Args:
-            api_name: Name of the API ('odds' or 'espn')
+            api_name: Name of the API ('odds', 'espn', or 'cfbd')
             
         Returns:
             int: Rate limit for the API
@@ -121,6 +136,8 @@ class Config:
             return self.rate_limit_odds
         elif api_name.lower() == 'espn':
             return self.rate_limit_espn
+        elif api_name.lower() == 'cfbd':
+            return self.rate_limit_cfbd
         else:
             raise ValueError(f"Unknown API name: {api_name}")
     
@@ -160,10 +177,11 @@ class Config:
         return f"""Config(
     debug={self.debug},
     log_level={self.log_level},
+    cfbd_api_configured={bool(self.cfbd_api_key)} (Primary),
+    espn_api_configured={bool(self.espn_api_key)} (Fallback),
     odds_api_configured={bool(self.odds_api_key)},
-    espn_api_configured={bool(self.espn_api_key)},
     cache_ttl={self.cache_ttl}s,
-    rate_limits=(odds:{self.rate_limit_odds}/day, espn:{self.rate_limit_espn}/min)
+    rate_limits=(cfbd:{self.rate_limit_cfbd}/day, espn:{self.rate_limit_espn}/min, odds:{self.rate_limit_odds}/day)
 )"""
 
 

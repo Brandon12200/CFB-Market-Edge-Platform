@@ -4,8 +4,26 @@ All factor calculators must inherit from this class to ensure consistent interfa
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
+from enum import Enum
 import logging
+
+
+class FactorType(Enum):
+    """Factor type classification for hierarchical system."""
+    PRIMARY = "primary"      # Strong contrarian signals (high weight)
+    SECONDARY = "secondary"  # Supporting factors (medium weight)
+    TRIGGER = "trigger"      # Conditional factors that only apply in specific situations
+    MODIFIER = "modifier"    # Multiplicative factors that enhance other signals
+
+
+class FactorConfidence(Enum):
+    """Confidence levels for factor signals."""
+    VERY_HIGH = 0.9   # Extremely confident contrarian signal
+    HIGH = 0.75       # Strong signal
+    MEDIUM = 0.5      # Moderate signal
+    LOW = 0.25        # Weak signal
+    NONE = 0.0        # No confidence/neutral
 
 
 class BaseFactorCalculator(ABC):
@@ -23,6 +41,12 @@ class BaseFactorCalculator(ABC):
         self.category = "unknown"  # Factor category (coaching, situational, momentum)
         self.description = "Base factor calculator"  # Human-readable description
         self.name = self.__class__.__name__.replace('Calculator', '').replace('Factor', '')
+        
+        # Enhanced properties for dynamic weighting
+        self.factor_type = FactorType.SECONDARY  # Default to secondary
+        self.activation_threshold = 0.5  # Minimum absolute value to activate
+        self.max_impact = 5.0  # Maximum adjustment this factor can make
+        self.is_multiplicative = False  # Whether this factor multiplies vs adds
         
         # Logging
         self.logger = logging.getLogger(f"factors.{self.name.lower()}")
@@ -65,6 +89,37 @@ class BaseFactorCalculator(ABC):
             Tuple of (min_value, max_value)
         """
         pass
+    
+    def calculate_with_confidence(self, home_team: str, away_team: str, 
+                                 context: Optional[Dict[str, Any]] = None) -> Tuple[float, FactorConfidence, List[str]]:
+        """
+        Calculate factor with confidence score and reasoning.
+        Default implementation for backward compatibility.
+        
+        Args:
+            home_team: Normalized home team name
+            away_team: Normalized away team name
+            context: Game context data
+            
+        Returns:
+            Tuple of (adjustment_value, confidence, reasoning_list)
+        """
+        # Default implementation uses standard calculate and returns medium confidence
+        value = self.calculate(home_team, away_team, context)
+        
+        # Determine confidence based on value magnitude
+        abs_value = abs(value)
+        if abs_value >= 3.0:
+            confidence = FactorConfidence.HIGH
+        elif abs_value >= 1.5:
+            confidence = FactorConfidence.MEDIUM
+        elif abs_value >= 0.5:
+            confidence = FactorConfidence.LOW
+        else:
+            confidence = FactorConfidence.NONE
+        
+        reasoning = [f"Factor value: {value:.2f}"]
+        return value, confidence, reasoning
     
     def get_factor_info(self) -> Dict[str, Any]:
         """
@@ -133,9 +188,40 @@ class BaseFactorCalculator(ABC):
         
         return float(value)
     
+    def apply_threshold(self, value: float) -> float:
+        """
+        Apply activation threshold to factor value.
+        
+        If absolute value is below threshold, return 0.
+        """
+        if abs(value) < self.activation_threshold:
+            self.logger.debug(f"Factor {self.name} below threshold: {abs(value):.3f} < {self.activation_threshold}")
+            return 0.0
+        return value
+    
+    def get_dynamic_weight(self, confidence: FactorConfidence) -> float:
+        """
+        Calculate dynamic weight based on confidence level.
+        
+        Higher confidence = higher weight contribution.
+        """
+        if self.factor_type == FactorType.PRIMARY:
+            # Primary factors maintain higher weights even with lower confidence
+            return self.weight * max(confidence.value, 0.5)
+        elif self.factor_type == FactorType.SECONDARY:
+            # Secondary factors scale more with confidence
+            return self.weight * confidence.value
+        elif self.factor_type == FactorType.TRIGGER:
+            # Trigger factors use full weight when activated
+            return self.weight if confidence != FactorConfidence.NONE else 0.0
+        else:  # MODIFIER
+            # Modifiers return their multiplier effect
+            return 1.0
+    
     def safe_calculate(self, home_team: str, away_team: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Safely calculate factor with comprehensive error handling.
+        Enhanced with confidence scoring and dynamic weighting.
         
         Args:
             home_team: Normalized home team name
@@ -147,40 +233,73 @@ class BaseFactorCalculator(ABC):
         """
         result = {
             'factor_name': self.name,
+            'factor_type': self.factor_type.value,
             'home_team': home_team,
             'away_team': away_team,
             'value': 0.0,
+            'raw_value': 0.0,
+            'confidence': FactorConfidence.NONE,
             'success': False,
             'error': None,
             'weight': self.weight,
+            'dynamic_weight': 0.0,
             'weighted_value': 0.0,
-            'explanation': None
+            'explanation': None,
+            'reasoning': [],
+            'is_multiplicative': self.is_multiplicative,
+            'activated': False
         }
         
         try:
             # Validate inputs
             self.validate_teams(home_team, away_team)
             
-            # Calculate factor value
-            raw_value = self.calculate(home_team, away_team, context)
+            # Calculate factor value with confidence
+            raw_value, confidence, reasoning = self.calculate_with_confidence(home_team, away_team, context)
+            
+            # Store raw value before threshold
+            result['raw_value'] = raw_value
+            
+            # Apply threshold
+            threshold_value = self.apply_threshold(raw_value)
+            
+            # Check if factor activated after threshold
+            if threshold_value == 0.0 and raw_value != 0.0:
+                result['reasoning'] = [f"Below activation threshold ({self.activation_threshold})"]
+                result['success'] = True
+                return result
             
             # Validate and clamp output
-            validated_value = self.validate_output(raw_value)
+            validated_value = self.validate_output(threshold_value)
+            
+            # Calculate dynamic weight based on confidence
+            dynamic_weight = self.get_dynamic_weight(confidence)
             
             # Calculate weighted contribution
-            weighted_value = validated_value * self.weight
+            if self.is_multiplicative:
+                # For multiplicative factors, store as multiplier
+                weighted_value = 1.0 + (validated_value * dynamic_weight / self.max_impact)
+            else:
+                weighted_value = validated_value * dynamic_weight
             
             # Generate explanation if available
             explanation = self.get_explanation(home_team, away_team, validated_value, context)
             
             result.update({
                 'value': validated_value,
+                'confidence': confidence,
                 'success': True,
+                'dynamic_weight': dynamic_weight,
                 'weighted_value': weighted_value,
-                'explanation': explanation
+                'explanation': explanation,
+                'reasoning': reasoning,
+                'activated': True
             })
             
-            self.logger.debug(f"Factor {self.name}: {away_team} @ {home_team} = {validated_value:.3f}")
+            self.logger.debug(
+                f"Factor {self.name}: {away_team} @ {home_team} = {validated_value:.3f} "
+                f"(confidence: {confidence.name}, weight: {dynamic_weight:.3f})"
+            )
             
         except Exception as e:
             self.logger.error(f"Error calculating factor {self.name}: {e}")

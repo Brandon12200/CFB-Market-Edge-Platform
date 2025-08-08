@@ -7,7 +7,7 @@ from typing import Dict, Any, Tuple, Optional
 import logging
 from datetime import datetime
 
-from factors.base_calculator import BaseFactorCalculator
+from factors.base_calculator import BaseFactorCalculator, FactorType, FactorConfidence
 
 
 class ExperienceDifferentialCalculator(BaseFactorCalculator):
@@ -25,6 +25,11 @@ class ExperienceDifferentialCalculator(BaseFactorCalculator):
         self.description = "Coaching experience differential analysis"
         self._min_output = -2.0
         self._max_output = 2.0
+        
+        # Mark as PRIMARY factor - experience differential is a strong contrarian signal
+        self.factor_type = FactorType.PRIMARY
+        self.activation_threshold = 1.0  # Configured by registry
+        self.max_impact = 5.0  # Configured by registry
         
         # Configuration
         self.config = {
@@ -86,6 +91,53 @@ class ExperienceDifferentialCalculator(BaseFactorCalculator):
         """Scale experience differential to output range."""
         # Raw diff is approximately -1.0 to 1.0, scale to -2.0 to 2.0
         return raw_diff * 2.0
+    
+    def calculate_with_confidence(self, home_team: str, away_team: str, 
+                                 context: Optional[Dict[str, Any]] = None) -> Tuple[float, FactorConfidence, list]:
+        """Calculate experience differential with confidence scoring."""
+        value = self.calculate(home_team, away_team, context)
+        reasoning = []
+        
+        if not context or not context.get('coaching_comparison'):
+            return value, FactorConfidence.NONE, ["No coaching data available"]
+        
+        coaching_comp = context.get('coaching_comparison', {})
+        home_coaching = coaching_comp.get('home_coaching', {})
+        away_coaching = coaching_comp.get('away_coaching', {})
+        
+        home_exp = home_coaching.get('head_coach_experience', 5)
+        away_exp = away_coaching.get('head_coach_experience', 5)
+        exp_diff = abs(home_exp - away_exp)
+        
+        # Determine confidence based on experience differential magnitude
+        if exp_diff >= 10:
+            confidence = FactorConfidence.VERY_HIGH
+            reasoning.append(f"Major experience gap: {max(home_exp, away_exp)} vs {min(home_exp, away_exp)} years")
+        elif exp_diff >= 5:
+            confidence = FactorConfidence.HIGH
+            reasoning.append(f"Significant experience differential: {exp_diff} years")
+        elif exp_diff >= 3:
+            confidence = FactorConfidence.MEDIUM
+            reasoning.append(f"Moderate experience differential: {exp_diff} years")
+        elif exp_diff >= 1:
+            confidence = FactorConfidence.LOW
+            reasoning.append(f"Small experience differential: {exp_diff} years")
+        else:
+            confidence = FactorConfidence.NONE
+            reasoning.append("Minimal experience differential")
+        
+        # Add context about rookie coaches
+        if home_exp <= 1:
+            reasoning.append(f"{home_team} has a first-year head coach")
+            # Cap confidence for rookie situations
+            if confidence.value > FactorConfidence.HIGH.value:
+                confidence = FactorConfidence.HIGH
+        if away_exp <= 1:
+            reasoning.append(f"{away_team} has a first-year head coach")
+            if confidence.value > FactorConfidence.HIGH.value:
+                confidence = FactorConfidence.HIGH
+        
+        return value, confidence, reasoning
     
     def get_output_range(self) -> Tuple[float, float]:
         """Get output range for experience differential."""

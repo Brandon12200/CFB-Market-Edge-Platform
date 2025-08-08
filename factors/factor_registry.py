@@ -9,7 +9,7 @@ from importlib import import_module
 import inspect
 
 from config import config
-from factors.base_calculator import BaseFactorCalculator
+from factors.base_calculator import BaseFactorCalculator, FactorType, FactorConfidence
 
 
 class FactorRegistry:
@@ -32,6 +32,11 @@ class FactorRegistry:
             'momentum_factors': config.momentum_factors_weight
         }
         
+        # Weighting strategy configuration
+        self.use_dynamic_weights = True  # Enable confidence-based dynamic weighting
+        self.apply_thresholds = True     # Enable threshold filtering
+        self.hierarchical_mode = True    # Enable primary/secondary hierarchy
+        
         # Performance tracking
         self.execution_stats = {
             'total_calculations': 0,
@@ -45,6 +50,9 @@ class FactorRegistry:
         
         # Load all factors
         self._load_all_factors()
+        
+        # Configure factor types and thresholds
+        self._configure_factor_hierarchy()
         
         # Validate weights
         self._validate_and_normalize_weights()
@@ -137,6 +145,40 @@ class FactorRegistry:
         except ImportError as e:
             self.logger.error(f"Failed to load momentum factors: {e}")
     
+    def _configure_factor_hierarchy(self) -> None:
+        """Configure factor types and thresholds for hierarchical system."""
+        # Define primary factors (high impact, high confidence required)
+        primary_factors = {
+            'DesperationIndex': {'threshold': 2.0, 'max_impact': 7.0},
+            'RevengeGame': {'threshold': 1.5, 'max_impact': 5.0},
+            'ExperienceDifferential': {'threshold': 1.0, 'max_impact': 5.0}
+        }
+        
+        # Define secondary factors (supporting signals)
+        secondary_factors = {
+            'PressureSituation': {'threshold': 0.75, 'max_impact': 3.0},
+            'VenuePerformance': {'threshold': 0.5, 'max_impact': 3.0},
+            'LookaheadSandwich': {'threshold': 1.0, 'max_impact': 4.0},
+            'StatementOpportunity': {'threshold': 1.0, 'max_impact': 3.0},
+            'HeadToHeadRecord': {'threshold': 0.5, 'max_impact': 2.0},
+            'ATSRecentForm': {'threshold': 0.5, 'max_impact': 3.0},
+            'PointDifferentialTrends': {'threshold': 0.75, 'max_impact': 3.0},
+            'CloseGamePerformance': {'threshold': 0.5, 'max_impact': 2.0}
+        }
+        
+        # Configure each factor
+        for factor_name, factor in self.factors.items():
+            if factor_name in primary_factors:
+                factor.factor_type = FactorType.PRIMARY
+                factor.activation_threshold = primary_factors[factor_name]['threshold']
+                factor.max_impact = primary_factors[factor_name]['max_impact']
+                self.logger.debug(f"Configured {factor_name} as PRIMARY factor")
+            elif factor_name in secondary_factors:
+                factor.factor_type = FactorType.SECONDARY
+                factor.activation_threshold = secondary_factors[factor_name]['threshold']
+                factor.max_impact = secondary_factors[factor_name]['max_impact']
+                self.logger.debug(f"Configured {factor_name} as SECONDARY factor")
+    
     def _validate_and_normalize_weights(self) -> None:
         """Validate and normalize factor weights within categories."""
         # Group factors by category
@@ -177,7 +219,7 @@ class FactorRegistry:
     def calculate_all_factors(self, home_team: str, away_team: str, 
                             context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Calculate all factors for a given matchup.
+        Calculate all factors for a given matchup with enhanced weighting.
         
         Args:
             home_team: Normalized home team name
@@ -191,17 +233,26 @@ class FactorRegistry:
             'home_team': home_team,
             'away_team': away_team,
             'factors': {},
+            'multiplicative_factors': [],
             'summary': {
                 'total_adjustment': 0.0,
+                'multiplicative_adjustment': 1.0,
                 'category_adjustments': {},
                 'factors_calculated': 0,
                 'factors_successful': 0,
                 'factors_failed': 0,
+                'factors_activated': 0,
+                'primary_signals': 0,
+                'secondary_signals': 0,
+                'avg_confidence': 0.0,
                 'data_quality_impact': 0.0
             }
         }
         
         self.execution_stats['total_calculations'] += 1
+        
+        confidence_sum = 0.0
+        confidence_count = 0
         
         # Calculate each factor
         for factor_name, factor in self.factors.items():
@@ -210,13 +261,28 @@ class FactorRegistry:
                 can_calculate, reason = factor.can_calculate(context)
                 
                 if can_calculate:
-                    # Calculate factor
+                    # Calculate factor with enhanced method
                     factor_result = factor.safe_calculate(home_team, away_team, context)
                     
                     # Track performance
                     if factor_result['success']:
                         self.execution_stats['successful_calculations'] += 1
                         results['summary']['factors_successful'] += 1
+                        
+                        # Track activation
+                        if factor_result.get('activated', False):
+                            results['summary']['factors_activated'] += 1
+                            
+                            # Track primary vs secondary
+                            if factor_result.get('factor_type') == FactorType.PRIMARY.value:
+                                results['summary']['primary_signals'] += 1
+                            elif factor_result.get('factor_type') == FactorType.SECONDARY.value:
+                                results['summary']['secondary_signals'] += 1
+                            
+                            # Track confidence
+                            if isinstance(factor_result.get('confidence'), FactorConfidence):
+                                confidence_sum += factor_result['confidence'].value
+                                confidence_count += 1
                     else:
                         self.execution_stats['failed_calculations'] += 1
                         results['summary']['factors_failed'] += 1
@@ -224,20 +290,32 @@ class FactorRegistry:
                     # Add to results
                     results['factors'][factor_name] = factor_result
                     
-                    # Add to total adjustment if successful
-                    if factor_result['success']:
-                        results['summary']['total_adjustment'] += factor_result['weighted_value']
-                        
-                        # Track category adjustments
-                        category = factor.category
-                        if category not in results['summary']['category_adjustments']:
-                            results['summary']['category_adjustments'][category] = 0.0
-                        results['summary']['category_adjustments'][category] += factor_result['weighted_value']
+                    # Handle multiplicative vs additive factors
+                    if factor_result['success'] and factor_result.get('activated', False):
+                        if factor_result.get('is_multiplicative', False):
+                            # Store multiplicative factors separately
+                            results['multiplicative_factors'].append(factor_result)
+                            results['summary']['multiplicative_adjustment'] *= factor_result['weighted_value']
+                        else:
+                            # Add to total adjustment (additive)
+                            weighted_val = factor_result.get('weighted_value', 0.0)
+                            if self.use_dynamic_weights:
+                                # Use dynamic weight if enabled
+                                weighted_val = factor_result.get('dynamic_weight', factor.weight) * factor_result.get('value', 0.0)
+                            
+                            results['summary']['total_adjustment'] += weighted_val
+                            
+                            # Track category adjustments
+                            category = factor.category
+                            if category not in results['summary']['category_adjustments']:
+                                results['summary']['category_adjustments'][category] = 0.0
+                            results['summary']['category_adjustments'][category] += weighted_val
                 
                 else:
                     # Factor cannot be calculated
                     results['factors'][factor_name] = {
                         'factor_name': factor_name,
+                        'factor_type': factor.factor_type.value,
                         'home_team': home_team,
                         'away_team': away_team,
                         'value': 0.0,
@@ -267,13 +345,18 @@ class FactorRegistry:
                 results['summary']['factors_failed'] += 1
                 results['summary']['factors_calculated'] += 1
         
+        # Calculate average confidence
+        if confidence_count > 0:
+            results['summary']['avg_confidence'] = confidence_sum / confidence_count
+        
         # Calculate data quality impact
         success_rate = (results['summary']['factors_successful'] / 
                        max(results['summary']['factors_calculated'], 1))
         results['summary']['data_quality_impact'] = success_rate
         
         self.logger.debug(f"Calculated {results['summary']['factors_calculated']} factors for {away_team} @ {home_team}")
-        self.logger.debug(f"Total adjustment: {results['summary']['total_adjustment']:.3f}")
+        self.logger.debug(f"Activated: {results['summary']['factors_activated']}, Primary: {results['summary']['primary_signals']}")
+        self.logger.debug(f"Total adjustment: {results['summary']['total_adjustment']:.3f}, Multiplier: {results['summary']['multiplicative_adjustment']:.3f}")
         
         return results
     

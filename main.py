@@ -246,26 +246,57 @@ def setup_logging(debug: bool = False, quiet: bool = False) -> None:
         debug: Enable debug logging
         quiet: Suppress non-essential output
     """
+    import os
+    from logging.handlers import RotatingFileHandler
+    
+    # Create logs directory if it doesn't exist
+    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Clear any existing handlers
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
     if debug:
         level = logging.DEBUG
     elif quiet:
-        level = logging.WARNING
+        level = logging.ERROR  # Only show errors on console
     else:
-        level = logging.INFO
+        level = logging.ERROR  # Default: only errors on console
     
-    # Override config logging for CLI
-    if quiet:
-        # Completely disable all logging for clean output
-        logging.disable(logging.CRITICAL)
-        # Also suppress warnings
+    # Always log everything to file
+    file_handler = RotatingFileHandler(
+        os.path.join(log_dir, 'cfb_predictor.log'),
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=3
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
+    root_logger.addHandler(file_handler)
+    
+    # Console handler - only errors unless debug mode
+    if not quiet:
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(level)
+        if debug:
+            console_handler.setFormatter(logging.Formatter(
+                '%(levelname)s: %(message)s'
+            ))
+        else:
+            # For normal operation, only show errors
+            console_handler.setFormatter(logging.Formatter('%(message)s'))
+        root_logger.addHandler(console_handler)
+    
+    # Set root logger level
+    root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
+    
+    # Suppress warnings in normal mode
+    if not debug:
         import warnings
         warnings.filterwarnings('ignore')
-    else:
-        logging.basicConfig(
-            level=level,
-            format='%(levelname)s: %(message)s' if not debug else '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            force=True  # Override any existing logging config
-        )
 
 
 def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optional[str]]:
@@ -280,16 +311,34 @@ def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optio
         tuple: (normalized_home, normalized_away) or (None, None) if invalid
     """
     _ensure_imports()
+    
+    # Check for FCS teams first
+    if normalizer.is_fcs_team(home_team):
+        print(f"Error: '{home_team}' is an FCS team. This tool only analyzes FBS (Power 4) matchups.")
+        return None, None
+    
+    if normalizer.is_fcs_team(away_team):
+        print(f"Error: '{away_team}' is an FCS team. This tool only analyzes FBS (Power 4) matchups.")
+        return None, None
+    
     normalized_home = normalizer.normalize(home_team)
     normalized_away = normalizer.normalize(away_team)
     
     if not normalized_home:
-        print(f"Error: Unknown home team '{home_team}'")
+        # Check if it might be FCS
+        if normalizer.is_fcs_team(home_team):
+            print(f"Error: '{home_team}' appears to be an FCS team.")
+        else:
+            print(f"Error: Unknown home team '{home_team}'")
         print("Use --list-teams to see supported team names")
         return None, None
     
     if not normalized_away:
-        print(f"Error: Unknown away team '{away_team}'")
+        # Check if it might be FCS
+        if normalizer.is_fcs_team(away_team):
+            print(f"Error: '{away_team}' appears to be an FCS team.")
+        else:
+            print(f"Error: Unknown away team '{away_team}'")
         print("Use --list-teams to see supported team names")
         return None, None
     
@@ -369,11 +418,13 @@ def validate_team_name(team_name: str) -> None:
 
 def list_games(week: int) -> None:
     """List all P4 games for a specific week with normalized team names."""
+    _ensure_imports()
     print(f"CFB Week {week} Schedule - P4 Games")
     print("=" * 60)
     
     try:
         # Initialize schedule client
+        from data.schedule_client import CFBScheduleClient
         schedule_client = CFBScheduleClient()
         
         # Test connection first
@@ -393,9 +444,9 @@ def list_games(week: int) -> None:
             return
         
         print(f"🏈 Found {len(p4_games)} P4 games for Week {week}")
-        print()
+        print("-" * 80)
         
-        # Display each game
+        # Display each game in single-line format
         for i, game in enumerate(p4_games, 1):
             away_team = game['away_team_short']
             home_team = game['home_team_short']
@@ -410,25 +461,24 @@ def list_games(week: int) -> None:
             if game['home_ranking']:
                 home_display = f"#{game['home_ranking']} {home_team}"
             
-            # Format game line
-            game_line = f"{i:2d}. {away_display:20} @ {home_display:20}"
+            # Compact matchup display (fixed width for alignment)
+            matchup = f"{away_display:18} @ {home_display:18}"
             
-            # Add venue info
-            if game['neutral_site']:
-                game_line += f" (Neutral: {venue})"
-            
-            print(game_line)
-            
-            # Show normalized names for easy testing
+            # Show normalized names for commands
             away_norm = game['away_team_normalized']
             home_norm = game['home_team_normalized']
             
-            if away_norm and home_norm:
-                print(f"    Command: python main.py --home {home_norm.lower().replace(' ', '-')} --away {away_norm.lower().replace(' ', '-')}")
-            else:
-                print(f"    Note: Team normalization incomplete")
+            # Venue info (compact)
+            venue_info = ""
+            if game['neutral_site']:
+                venue_info = f"[Neutral: {venue[:15]}]"
             
-            print()
+            # Command for easy copy/paste
+            if away_norm and home_norm:
+                cmd = f"--home {home_norm.lower().replace(' ', '-')} --away {away_norm.lower().replace(' ', '-')}"
+                print(f"{i:2d}. {matchup} {venue_info} | {cmd}")
+            else:
+                print(f"{i:2d}. {matchup} {venue_info} | [Normalization incomplete]")
         
         print("=" * 60)
         print("💡 Tips:")
@@ -774,6 +824,10 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             home = game.get('home_team', '').upper()
             away = game.get('away_team', '').upper()
             
+            # Filter out FCS teams first
+            if normalizer.is_fcs_team(home) or normalizer.is_fcs_team(away):
+                continue
+            
             # Check if at least one team is Power 4 (includes independents like Notre Dame)
             if home in all_power4_teams or away in all_power4_teams:
                 # Determine conference matchup type
@@ -838,44 +892,38 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
 def _display_games_simple(games):
     """Display games in a simple, terminal-friendly format."""
     print("\n🏈 Power 4 Conference Games:")
-    print("-" * 60)
+    print("-" * 80)
     
     for i, game in enumerate(games, 1):
         away_team = game['away_team']
         home_team = game['home_team']
         
-        # Create matchup string
-        matchup = f"{away_team} @ {home_team}"
+        # Create matchup string (fixed width for alignment)
+        matchup = f"{away_team:15} @ {home_team:15}"
         
         # Format spread
         if game['spread'] is not None:
             if game['spread'] > 0:
-                line = f"{home_team} -{game['spread']}"
+                line = f"{home_team[:10]} -{game['spread']:.1f}"
             elif game['spread'] < 0:
-                line = f"{away_team} -{abs(game['spread'])}"
+                line = f"{away_team[:10]} -{abs(game['spread']):.1f}"
             else:
                 line = "Pick'em"
         else:
             line = "No line"
         
-        # Print game with clear formatting
-        print(f"{i:2d}. {matchup}")
-        print(f"    Line: {line}")
-        
-        # Add conference context
+        # Format type (compact)
         if game.get('matchup_type') == 'Conference':
-            print(f"    Type: Conference game ({game.get('home_conf', 'Unknown')})")
+            conf = game.get('home_conf', 'Unknown')[:8]
+            type_str = f"[{conf}]"
         else:
-            # Show if any team is independent
-            home_conf = game.get('home_conf')
-            away_conf = game.get('away_conf')
-            if home_conf == 'INDEPENDENT' or away_conf == 'INDEPENDENT':
-                independent_team = away_team if away_conf == 'INDEPENDENT' else home_team
-                print(f"    Type: Non-conference (vs Independent)")
+            if game.get('home_conf') == 'INDEPENDENT' or game.get('away_conf') == 'INDEPENDENT':
+                type_str = "[IND]"
             else:
-                print(f"    Type: Non-conference")
+                type_str = "[Non-Conf]"
         
-        print()  # Empty line between games
+        # Single line output
+        print(f"{i:2d}. {matchup} | {line:15} {type_str}")
 
 
 def main() -> int:

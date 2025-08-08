@@ -35,6 +35,9 @@ class TeamNameNormalizer:
         
         # All possible names for quick lookup
         self._all_names = self._build_all_names_index()
+        
+        # FCS teams to filter out
+        self.fcs_teams = self._build_fcs_teams()
     
     def normalize(self, team_name: str) -> Optional[str]:
         """
@@ -636,6 +639,189 @@ class TeamNameNormalizer:
         aliases.update(state_mappings)
         
         return aliases
+    
+    def _build_fcs_teams(self) -> Set[str]:
+        """Build set of FCS teams to filter out."""
+        fcs_teams = {
+            # Common FCS teams that appear in early season matchups
+            'KENNESAW STATE', 'KENNESAW', 'KSU OWLS',
+            'ELON', 'ELON PHOENIX',
+            'WEBER STATE', 'WEBER',
+            'MONTANA STATE', 'MONTANA', 'MONTANA GRIZZLIES',
+            'NORTH DAKOTA', 'NORTH DAKOTA STATE', 'NDSU',
+            'SOUTH DAKOTA', 'SOUTH DAKOTA STATE', 'SDSU',
+            'PORTLAND STATE', 'PSU VIKINGS',
+            'NORTHERN ARIZONA', 'NAU',
+            'IDAHO STATE', 'ISU BENGALS',
+            'ILLINOIS STATE', 'ISU REDBIRDS',
+            'JAMES MADISON', 'JMU',  # Note: JMU is now FBS but often still in FCS data
+            'DELAWARE', 'DELAWARE STATE',
+            'VILLANOVA', 'NOVA',
+            'RICHMOND', 'RICHMOND SPIDERS',
+            'WILLIAM & MARY', 'WILLIAM AND MARY',
+            'FURMAN', 'FURMAN PALADINS',
+            'SAMFORD', 'SAMFORD BULLDOGS',
+            'CHATTANOOGA', 'UTC',
+            'CITADEL', 'THE CITADEL',
+            'VMI', 'VIRGINIA MILITARY',
+            'WOFFORD', 'WOFFORD TERRIERS',
+            'MERCER', 'MERCER BEARS',
+            'GARDNER-WEBB', 'GARDNER WEBB',
+            'PRESBYTERIAN', 'PC',
+            'CAMPBELL', 'CAMPBELL FIGHTING CAMELS',
+            'STETSON', 'STETSON HATTERS',
+            'VALPARAISO', 'VALPO',
+            'DAVIDSON', 'DAVIDSON WILDCATS',
+            'DRAKE', 'DRAKE BULLDOGS',
+            'BUTLER', 'BUTLER BULLDOGS',
+            'MOREHEAD STATE', 'MOREHEAD',
+            'TENNESSEE STATE', 'TSU',
+            'TENNESSEE TECH', 'TTU',
+            'EASTERN KENTUCKY', 'EKU',
+            'EASTERN ILLINOIS', 'EIU',
+            'SOUTHEAST MISSOURI', 'SEMO',
+            'SOUTHERN ILLINOIS', 'SIU',
+            'NORTHERN IOWA', 'UNI',
+            'YOUNGSTOWN STATE', 'YSU',
+            'MISSOURI STATE', 'MOSTATE',
+            'INDIANA STATE', 'ISU SYCAMORES',
+            'WESTERN ILLINOIS', 'WIU',
+            'NORTH DAKOTA FIGHTING HAWKS',
+            'SOUTH DAKOTA COYOTES',
+            'IDAHO VANDALS',  # Idaho dropped to FCS
+            'PORTLAND STATE VIKINGS',
+            'NORTHERN ARIZONA LUMBERJACKS',
+            'ILLINOIS STATE REDBIRDS',
+            'WEBER STATE WILDCATS',
+            'SOUTHERN UTAH', 'SUU',
+            'NORTHERN COLORADO', 'UNC BEARS',
+            'SACRAMENTO STATE', 'SAC STATE',
+            'CAL POLY', 'CALIFORNIA POLYTECHNIC',
+            'UC DAVIS', 'CALIFORNIA DAVIS',
+            'EASTERN WASHINGTON', 'EWU',
+            'IDAHO', 'IDAHO VANDALS',
+            'MONTANA STATE BOBCATS',
+            'ALABAMA STATE', 'ASU HORNETS',
+            'ALABAMA A&M', 'AAMU',
+            'ALCORN STATE', 'ALCORN',
+            'BETHUNE-COOKMAN', 'BETHUNE COOKMAN', 'BCU',
+            'FLORIDA A&M', 'FAMU',
+            'GRAMBLING', 'GRAMBLING STATE',
+            'JACKSON STATE', 'JSU TIGERS',
+            'MISSISSIPPI VALLEY', 'MVSU',
+            'PRAIRIE VIEW', 'PRAIRIE VIEW A&M', 'PVAMU',
+            'SOUTHERN', 'SOUTHERN UNIVERSITY', 'SU',
+            'TEXAS SOUTHERN', 'TXSO',
+            'ARKANSAS-PINE BLUFF', 'UAPB',
+            'NORFOLK STATE', 'NSU',
+            'NORTH CAROLINA A&T', 'NC A&T', 'NCAT',
+            'NORTH CAROLINA CENTRAL', 'NCCU',
+            'SOUTH CAROLINA STATE', 'SCSU',
+            'DELAWARE STATE', 'DSU',
+            'HOWARD', 'HOWARD BISON',
+            'MORGAN STATE', 'MSU BEARS',
+            'SAVANNAH STATE', 'SSU',
+            'MAINE', 'MAINE BLACK BEARS',
+            'NEW HAMPSHIRE', 'UNH',
+            'RHODE ISLAND', 'URI',
+            'STONY BROOK', 'SBU',
+            'ALBANY', 'UALBANY',
+            'TOWSON', 'TOWSON TIGERS',
+            'MONMOUTH', 'MONMOUTH HAWKS',
+            'SACRED HEART', 'SHU',
+            'WAGNER', 'WAGNER SEAHAWKS',
+            'DUQUESNE', 'DUQUESNE DUKES',
+            'ROBERT MORRIS', 'RMU',
+            'SAINT FRANCIS', 'ST FRANCIS', 'SFU',
+            'CENTRAL CONNECTICUT', 'CCSU',
+            'LONG ISLAND', 'LIU',
+            'BRYANT', 'BRYANT BULLDOGS',
+            'COLUMBIA', 'COLUMBIA LIONS',
+            'CORNELL', 'CORNELL BIG RED',
+            'DARTMOUTH', 'DARTMOUTH BIG GREEN',
+            'HARVARD', 'HARVARD CRIMSON',
+            'PENN', 'PENNSYLVANIA', 'UPENN',
+            'PRINCETON', 'PRINCETON TIGERS',
+            'YALE', 'YALE BULLDOGS',
+            'BROWN', 'BROWN BEARS',
+            'GEORGETOWN', 'GEORGETOWN HOYAS',
+            'BUCKNELL', 'BUCKNELL BISON',
+            'COLGATE', 'COLGATE RAIDERS',
+            'FORDHAM', 'FORDHAM RAMS',
+            'HOLY CROSS', 'HC',
+            'LAFAYETTE', 'LAFAYETTE LEOPARDS',
+            'LEHIGH', 'LEHIGH MOUNTAIN HAWKS',
+            'MARIST', 'MARIST RED FOXES',
+            'AUSTIN PEAY', 'APSU',
+            'MURRAY STATE', 'MSU RACERS',
+            'TENNESSEE MARTIN', 'UTM',
+            'MCNEESE', 'MCNEESE STATE',
+            'NICHOLLS', 'NICHOLLS STATE',
+            'NORTHWESTERN STATE', 'NSU DEMONS',
+            'SOUTHEASTERN LOUISIANA', 'SELU',
+            'HOUSTON BAPTIST', 'HBU',
+            'INCARNATE WORD', 'UIW',
+            'LAMAR', 'LAMAR CARDINALS',
+            'SAM HOUSTON', 'SAM HOUSTON STATE', 'SHSU',
+            'STEPHEN F AUSTIN', 'SFA',
+            'ABILENE CHRISTIAN', 'ACU',
+            'CENTRAL ARKANSAS', 'UCA',
+            'TARLETON STATE', 'TARLETON',
+            'UTAH TECH', 'DIXIE STATE',
+            'SOUTHERN UTAH THUNDERBIRDS',
+            'HAMPTON', 'HAMPTON PIRATES',
+            'CHARLESTON SOUTHERN', 'CSU BUCCANEERS',
+            'COASTAL CAROLINA', 'CCU',  # Now FBS but sometimes in FCS data
+            'LIBERTY', 'LIBERTY FLAMES',  # Now FBS but sometimes in FCS data
+        }
+        
+        # Convert all to uppercase for consistent matching
+        return {team.upper() for team in fcs_teams}
+    
+    def is_fcs_team(self, team_name: str) -> bool:
+        """
+        Check if a team is an FCS team.
+        
+        Args:
+            team_name: Team name in any format
+            
+        Returns:
+            bool: True if team is FCS, False otherwise
+        """
+        if not team_name:
+            return False
+        
+        # Clean the input
+        clean_name = self._clean_input(team_name)
+        
+        # Check if it's in our FCS list
+        if clean_name in self.fcs_teams:
+            return True
+        
+        # Check partial matches for common FCS identifiers
+        fcs_keywords = ['STATE', 'NORTHERN', 'SOUTHERN', 'EASTERN', 'WESTERN', 
+                       'CENTRAL', 'A&M', 'A&T', 'TECH', 'VALLEY']
+        
+        # Only check keywords if the team is NOT in our FBS mappings
+        if clean_name not in self.team_mappings and clean_name not in self.alias_mappings:
+            for keyword in fcs_keywords:
+                if keyword in clean_name and clean_name in self.fcs_teams:
+                    return True
+        
+        return False
+    
+    def is_fbs_vs_fcs_matchup(self, home_team: str, away_team: str) -> bool:
+        """
+        Check if a matchup involves at least one FCS team.
+        
+        Args:
+            home_team: Home team name
+            away_team: Away team name
+            
+        Returns:
+            bool: True if at least one team is FCS
+        """
+        return self.is_fcs_team(home_team) or self.is_fcs_team(away_team)
 
 
 # Global normalizer instance

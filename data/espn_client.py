@@ -230,13 +230,23 @@ class ESPNStatsClient:
         
         Args:
             team_name: Normalized team name
-            year: Season year (default: current year)
+            year: Season year (default: most recent available season)
             
         Returns:
             Dictionary with team statistics
         """
         if year is None:
-            year = datetime.now().year
+            # Use the most recent completed season (2024 as of August 2025)
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            
+            # If we're in early months (Jan-July), use previous year
+            # If we're in Aug+, try current year but fallback to previous if needed
+            if current_month < 8:
+                year = current_year - 1
+            else:
+                # Try current year first, but we'll fallback to 2024 if it fails
+                year = min(current_year, 2024)  # Cap at 2024 for now
         
         # Check cache
         cache_key = f"stats_{year}"

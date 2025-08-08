@@ -235,11 +235,20 @@ class OddsAPIClient:
         home_team_raw = game_data.get('home_team', '')
         away_team_raw = game_data.get('away_team', '')
         
+        # Check for FCS teams first (before normalization)
+        if normalizer.is_fbs_vs_fcs_matchup(home_team_raw, away_team_raw):
+            self.logger.debug(f"Filtering out FCS matchup: {away_team_raw} @ {home_team_raw}")
+            return None
+        
         # Normalize team names
         home_team = normalizer.normalize(home_team_raw)
         away_team = normalizer.normalize(away_team_raw)
         
         if not home_team or not away_team:
+            # Second check - might be an FCS team we couldn't normalize
+            if normalizer.is_fcs_team(home_team_raw) or normalizer.is_fcs_team(away_team_raw):
+                self.logger.debug(f"Filtering out potential FCS team: {away_team_raw} @ {home_team_raw}")
+                return None
             self.logger.warning(f"Could not normalize teams: {home_team_raw} vs {away_team_raw}")
             return None
         
