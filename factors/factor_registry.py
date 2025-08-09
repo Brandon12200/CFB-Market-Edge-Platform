@@ -26,7 +26,16 @@ class FactorRegistry:
     def __init__(self):
         """Initialize factor registry."""
         self.factors: Dict[str, BaseFactorCalculator] = {}
+        
+        # New contrarian weight structure: PRIMARY/SECONDARY/MODIFIER
         self.category_weights = {
+            'primary': config.primary_factors_weight,      # 60% - Direct contrarian signals
+            'secondary': config.secondary_factors_weight,  # 30% - Supporting evidence
+            'modifier': config.modifier_factors_weight     # 10% - Situational adjustments
+        }
+        
+        # Legacy category mapping (for existing factors)
+        self.legacy_category_weights = {
             'coaching_edge': config.coaching_edge_weight,
             'situational_context': config.situational_context_weight,
             'momentum_factors': config.momentum_factors_weight
@@ -60,111 +69,76 @@ class FactorRegistry:
         self.logger.info(f"Factor registry initialized with {len(self.factors)} factors")
     
     def _load_all_factors(self) -> None:
-        """Load all factor calculator classes."""
-        try:
-            # Load coaching edge factors
-            self._load_coaching_factors()
-            
-            # Load situational context factors
-            self._load_situational_factors()
-            
-            # Load momentum factors (placeholder for Week 4)
-            self._load_momentum_factors()
-            
-        except Exception as e:
-            self.logger.error(f"Error loading factors: {e}")
-            raise
-    
-    def _load_coaching_factors(self) -> None:
-        """Load coaching edge factor calculators."""
-        try:
-            from factors.coaching_edge import (
-                ExperienceDifferentialCalculator,
-                PressureSituationCalculator,
-                VenuePerformanceCalculator,
-                HeadToHeadRecordCalculator
-            )
-            
-            coaching_factors = [
-                ExperienceDifferentialCalculator(),
-                PressureSituationCalculator(),
-                VenuePerformanceCalculator(),
-                HeadToHeadRecordCalculator()
-            ]
-            
-            for factor in coaching_factors:
-                self.factors[factor.name] = factor
-                self.logger.debug(f"Loaded coaching factor: {factor.name}")
+        """
+        Dynamically load all factor calculator classes from the factors directory.
+        
+        This modular approach automatically discovers and loads any factor that:
+        1. Is in a .py file in the factors directory
+        2. Contains a class that inherits from BaseFactorCalculator
+        3. Has a proper __init__ method
+        
+        This allows new factors to be added simply by creating a new file,
+        without modifying the registry.
+        """
+        import os
+        import importlib
+        import inspect
+        
+        factors_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Iterate through all Python files in the factors directory
+        for filename in os.listdir(factors_dir):
+            if filename.endswith('.py') and not filename.startswith('__') and filename != 'base_calculator.py' and filename != 'factor_registry.py':
+                module_name = filename[:-3]  # Remove .py extension
                 
-        except ImportError as e:
-            self.logger.error(f"Failed to load coaching factors: {e}")
+                try:
+                    # Dynamically import the module
+                    module = importlib.import_module(f'factors.{module_name}')
+                    
+                    # Find all classes in the module that inherit from BaseFactorCalculator
+                    for name, obj in inspect.getmembers(module):
+                        if inspect.isclass(obj) and issubclass(obj, BaseFactorCalculator) and obj != BaseFactorCalculator:
+                            try:
+                                # Instantiate the factor
+                                factor_instance = obj()
+                                self.factors[factor_instance.name] = factor_instance
+                                self.logger.debug(f"Loaded factor: {factor_instance.name} from {module_name}.py")
+                            except Exception as e:
+                                self.logger.warning(f"Could not instantiate {name} from {module_name}: {e}")
+                                
+                except ImportError as e:
+                    self.logger.warning(f"Could not import module {module_name}: {e}")
+                except Exception as e:
+                    self.logger.error(f"Error loading factors from {module_name}: {e}")
+        
+        self.logger.info(f"Dynamically loaded {len(self.factors)} factors")
     
-    def _load_situational_factors(self) -> None:
-        """Load situational context factor calculators."""
-        try:
-            from factors.situational_context import (
-                DesperationIndexCalculator,
-                RevengeGameCalculator,
-                LookaheadSandwichCalculator,
-                StatementOpportunityCalculator
-            )
-            
-            situational_factors = [
-                DesperationIndexCalculator(),
-                RevengeGameCalculator(),
-                LookaheadSandwichCalculator(),
-                StatementOpportunityCalculator()
-            ]
-            
-            for factor in situational_factors:
-                self.factors[factor.name] = factor
-                self.logger.debug(f"Loaded situational factor: {factor.name}")
-                
-        except ImportError as e:
-            self.logger.error(f"Failed to load situational factors: {e}")
-    
-    def _load_momentum_factors(self) -> None:
-        """Load momentum factor calculators."""
-        try:
-            from factors.momentum_factors import (
-                ATSRecentFormCalculator,
-                PointDifferentialTrendsCalculator,
-                CloseGamePerformanceCalculator
-            )
-            
-            momentum_factors = [
-                ATSRecentFormCalculator(),
-                PointDifferentialTrendsCalculator(),
-                CloseGamePerformanceCalculator()
-            ]
-            
-            for factor in momentum_factors:
-                self.factors[factor.name] = factor
-                self.logger.debug(f"Loaded momentum factor: {factor.name}")
-                
-        except ImportError as e:
-            self.logger.error(f"Failed to load momentum factors: {e}")
     
     def _configure_factor_hierarchy(self) -> None:
-        """Configure factor types and thresholds for hierarchical system."""
-        # Define primary factors (high impact, high confidence required)
+        """Configure factor types and thresholds for contrarian system."""
+        # PRIMARY factors (60% weight) - Direct contrarian signals
+        # These are the factors that most contradict public perception
         primary_factors = {
-            'DesperationIndex': {'threshold': 2.0, 'max_impact': 7.0},
-            'RevengeGame': {'threshold': 1.5, 'max_impact': 5.0},
-            'ExperienceDifferential': {'threshold': 1.0, 'max_impact': 5.0}
+            'HeadToHeadRecord': {'threshold': 1.0, 'max_impact': 5.0},      # 20% of total
+            'DesperationIndex': {'threshold': 2.0, 'max_impact': 7.0},      # 20% of total
+            # 'SchedulingFatigue': {'threshold': 1.5, 'max_impact': 3.5},   # 20% of total (to be added)
         }
         
-        # Define secondary factors (supporting signals)
+        # SECONDARY factors (30% weight) - Supporting evidence
+        # These provide additional context but aren't primary contrarian signals
         secondary_factors = {
+            'ExperienceDifferential': {'threshold': 1.0, 'max_impact': 3.0},
             'PressureSituation': {'threshold': 0.75, 'max_impact': 3.0},
-            'VenuePerformance': {'threshold': 0.5, 'max_impact': 3.0},
+            'RevengeGame': {'threshold': 1.5, 'max_impact': 4.0},
             'LookaheadSandwich': {'threshold': 1.0, 'max_impact': 4.0},
-            'StatementOpportunity': {'threshold': 1.0, 'max_impact': 3.0},
-            'HeadToHeadRecord': {'threshold': 0.5, 'max_impact': 2.0},
-            'ATSRecentForm': {'threshold': 0.5, 'max_impact': 3.0},
             'PointDifferentialTrends': {'threshold': 0.75, 'max_impact': 3.0},
-            'CloseGamePerformance': {'threshold': 0.5, 'max_impact': 2.0}
+            'CloseGamePerformance': {'threshold': 0.5, 'max_impact': 2.0},
+            # 'StyleMismatch': {'threshold': 1.0, 'max_impact': 4.0},       # 15% of total (to be added)
         }
+        
+        # MODIFIER factors (10% weight) - Situational adjustments
+        # These amplify or dampen predictions based on market conditions
+        # 'MarketSentiment': {'threshold': 0.5, 'max_impact': 2.5},        # 10% of total (to be added)
         
         # Configure each factor
         for factor_name, factor in self.factors.items():

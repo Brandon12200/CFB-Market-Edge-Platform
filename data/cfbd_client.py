@@ -507,6 +507,93 @@ class CFBDataClient:
             self.logger.error(f"CFBD API connection test failed: {e}")
             return False
 
+    def get_games(self, year: int = 2024, week: Optional[int] = None, 
+                  team: Optional[str] = None, **kwargs) -> List[Dict[str, Any]]:
+        """
+        Get games from CFBD API for scheduling fatigue analysis.
+        
+        Args:
+            year: Season year
+            week: Specific week (optional) 
+            team: Specific team name (optional)
+            **kwargs: Additional query parameters
+            
+        Returns:
+            List of game dictionaries with scheduling data
+        """
+        params = {'year': year}
+        
+        if week:
+            params['week'] = week
+        if team:
+            # Normalize team name for API consistency
+            params['team'] = normalizer.normalize(team)
+        
+        # Add any additional parameters
+        params.update(kwargs)
+        
+        try:
+            # Rate limiting
+            self.rate_limiter.wait_if_needed()
+            
+            url = f"{self.base_url}/games"
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code != 200:
+                self.logger.warning(f"CFBD API returned {response.status_code} for games")
+                return []
+            
+            data = response.json()
+            self.logger.info(f"Retrieved {len(data)} games from CFBD API")
+            return data
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching CFBD games data: {e}")
+            return []
+
+    def get_betting_lines(self, game_id: Optional[int] = None, year: int = 2024, 
+                         week: Optional[int] = None, **kwargs) -> List[Dict[str, Any]]:
+        """
+        Get betting lines from CFBD API for market sentiment analysis.
+        
+        Args:
+            game_id: Specific game ID (optional)
+            year: Season year 
+            week: Specific week (optional)
+            **kwargs: Additional query parameters
+            
+        Returns:
+            List of betting line dictionaries
+        """
+        params = {'year': year}
+        
+        if game_id:
+            params['gameId'] = game_id
+        if week:
+            params['week'] = week
+            
+        # Add any additional parameters  
+        params.update(kwargs)
+        
+        try:
+            # Rate limiting
+            self.rate_limiter.wait_if_needed()
+            
+            url = f"{self.base_url}/lines"
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code != 200:
+                self.logger.warning(f"CFBD API returned {response.status_code} for betting lines")
+                return []
+            
+            data = response.json()
+            self.logger.info(f"Retrieved {len(data)} betting lines from CFBD API")
+            return data
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching CFBD betting lines: {e}")
+            return []
+
 
 # Global CFBD client instance
 cfbd_client = None

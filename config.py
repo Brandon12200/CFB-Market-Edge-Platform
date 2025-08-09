@@ -46,6 +46,12 @@ class Config:
         self.max_confidence_threshold = 95  # percent
         
         # Factor Weights (should sum to 1.0)
+        # New contrarian factor structure: PRIMARY/SECONDARY/MODIFIER
+        self.primary_factors_weight = float(os.getenv('PRIMARY_FACTORS_WEIGHT', 0.60))
+        self.secondary_factors_weight = float(os.getenv('SECONDARY_FACTORS_WEIGHT', 0.30))
+        self.modifier_factors_weight = float(os.getenv('MODIFIER_FACTORS_WEIGHT', 0.10))
+        
+        # Legacy weights (deprecated but kept for backward compatibility)
         self.coaching_edge_weight = 0.40
         self.situational_context_weight = 0.40
         self.momentum_factors_weight = 0.20
@@ -77,12 +83,19 @@ class Config:
         if self.cache_ttl <= 0:
             raise ValueError("Cache TTL must be positive")
         
-        # Validate factor weights sum to 1.0
-        total_weight = (self.coaching_edge_weight + 
-                       self.situational_context_weight + 
-                       self.momentum_factors_weight)
-        if abs(total_weight - 1.0) > 0.001:  # Allow for float precision
-            raise ValueError(f"Factor weights must sum to 1.0, got {total_weight}")
+        # Validate new contrarian factor weights sum to 1.0
+        new_total_weight = (self.primary_factors_weight + 
+                           self.secondary_factors_weight + 
+                           self.modifier_factors_weight)
+        if abs(new_total_weight - 1.0) > 0.001:  # Allow for float precision
+            raise ValueError(f"Contrarian factor weights must sum to 1.0, got {new_total_weight}")
+        
+        # Also validate legacy weights for backward compatibility
+        legacy_total_weight = (self.coaching_edge_weight + 
+                              self.situational_context_weight + 
+                              self.momentum_factors_weight)
+        if abs(legacy_total_weight - 1.0) > 0.001:
+            raise ValueError(f"Legacy factor weights must sum to 1.0, got {legacy_total_weight}")
     
     def _setup_logging(self) -> None:
         """Configure logging based on configuration settings."""

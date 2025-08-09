@@ -119,6 +119,7 @@ class DataManager:
             'home_team': home_team,
             'away_team': away_team,
             'week': week,
+            'year': datetime.now().year,  # Add current year for factors
             'timestamp': datetime.now().isoformat(),
             'data_sources': []
         }
