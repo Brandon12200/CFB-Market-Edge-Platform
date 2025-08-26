@@ -61,7 +61,9 @@ class SchedulingFatigueCalculator(BaseFactorCalculator):
             self.logger.debug("No context or CFBD client available for scheduling fatigue")
             return 0.0
         
-        week = context.get('week', 1)
+        week = context.get('week')
+        if week is None:
+            week = 1  # Default to week 1 if not provided
         year = context.get('year', 2024)
         
         # Calculate fatigue scores for both teams
@@ -83,6 +85,10 @@ class SchedulingFatigueCalculator(BaseFactorCalculator):
     def _calculate_team_fatigue(self, team: str, current_week: int, year: int) -> float:
         """Calculate cumulative fatigue score for a team."""
         try:
+            # Ensure current_week is valid
+            if current_week is None or current_week < 1:
+                current_week = 1
+            
             # Get recent games for the team
             start_week = max(1, current_week - self.config['lookback_weeks'])
             games = self.cfbd_client.get_games(

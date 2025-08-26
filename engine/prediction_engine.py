@@ -11,6 +11,7 @@ from config import config
 from data.data_manager import data_manager
 from factors.factor_registry import factor_registry
 from utils.normalizer import normalizer
+from engine.variance_detector import variance_detector
 
 
 class PredictionEngine:
@@ -84,6 +85,14 @@ class PredictionEngine:
             # Step 2: Get Vegas consensus spread
             vegas_spread = context.get('vegas_spread')
             
+            # CRITICAL: Cannot generate contrarian prediction without betting line
+            if vegas_spread is None:
+                self.logger.warning(f"No betting line available for {away_normalized} @ {home_normalized}")
+                return self._create_error_result(
+                    home_normalized, away_normalized, week,
+                    "No betting line available - cannot calculate contrarian prediction"
+                )
+            
             # Step 3: Calculate all factor adjustments
             factor_results = self.factor_registry.calculate_all_factors(
                 home_normalized, away_normalized, context
@@ -94,10 +103,13 @@ class PredictionEngine:
                 vegas_spread, factor_results, context
             )
             
+            # Step 4.5: Analyze factor variance for disagreement detection
+            variance_analysis = variance_detector.analyze_factor_variance(factor_results)
+            
             # Step 5: Build comprehensive result
             result = self._build_prediction_result(
                 home_normalized, away_normalized, week,
-                vegas_spread, factor_results, prediction_result, context
+                vegas_spread, factor_results, prediction_result, context, variance_analysis
             )
             
             # Track successful prediction
@@ -196,7 +208,8 @@ class PredictionEngine:
     
     def _build_prediction_result(self, home_team: str, away_team: str, week: Optional[int],
                                vegas_spread: Optional[float], factor_results: Dict[str, Any],
-                               prediction_result: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+                               prediction_result: Dict[str, Any], context: Dict[str, Any],
+                               variance_analysis: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Build comprehensive prediction result."""
         
         return {
@@ -227,9 +240,12 @@ class PredictionEngine:
             'factors_calculated': factor_results.get('summary', {}).get('factors_calculated', 0),
             'factors_successful': factor_results.get('summary', {}).get('factors_successful', 0),
             
-            # Recommendation
-            'recommendation': self._generate_recommendation(prediction_result, factor_results),
-            'confidence_score': self._calculate_confidence_score(prediction_result, factor_results, context),
+            # Variance Analysis
+            'variance_analysis': variance_analysis,
+            
+            # Recommendation (now incorporates variance)
+            'recommendation': self._generate_recommendation(prediction_result, factor_results, variance_analysis),
+            'confidence_score': self._calculate_confidence_score(prediction_result, factor_results, context, variance_analysis),
             
             # Context data
             'context': {
@@ -240,7 +256,8 @@ class PredictionEngine:
         }
     
     def _generate_recommendation(self, prediction_result: Dict[str, Any], 
-                               factor_results: Dict[str, Any]) -> str:
+                               factor_results: Dict[str, Any],
+                               variance_analysis: Optional[Dict[str, Any]] = None) -> str:
         """Generate betting recommendation based on prediction results."""
         prediction_type = prediction_result.get('prediction_type', 'UNKNOWN')
         edge_direction = prediction_result.get('edge_direction', 'neutral')
@@ -270,11 +287,32 @@ class PredictionEngine:
         else:
             recommendation += f" (Slight {edge_size:.1f} point edge)"
         
+        # Add variance analysis warnings/confirmations
+        if variance_analysis:
+            variance_level = variance_analysis.get('variance_level', '')
+            var_recommendation = variance_analysis.get('recommendation', {})
+            var_action = var_recommendation.get('action', '')
+            
+            if variance_level == 'extreme':
+                recommendation += " ⚠️ EXTREME FACTOR DISAGREEMENT - AVOID"
+            elif variance_level == 'strong':
+                recommendation += " ⚠️ High uncertainty - reduce bet size"
+            elif variance_level == 'moderate':
+                recommendation += " ⚠️ Some factor disagreement - proceed cautiously"
+            elif variance_level == 'consensus':
+                recommendation += " ✓ Factors align - high confidence"
+            
+            # Override recommendation if variance suggests avoiding
+            if var_action in ['AVOID_OR_MINIMUM', 'REDUCE_EXPOSURE']:
+                recommendation = f"VARIANCE WARNING: {recommendation.split('(')[0].strip()}"
+                recommendation += f" - Factors disagree ({variance_level} variance)"
+        
         return recommendation
     
     def _calculate_confidence_score(self, prediction_result: Dict[str, Any], 
                                   factor_results: Dict[str, Any], 
-                                  context: Dict[str, Any]) -> float:
+                                  context: Dict[str, Any],
+                                  variance_analysis: Optional[Dict[str, Any]] = None) -> float:
         """Calculate confidence score for the prediction (0.0 to 1.0)."""
         confidence_factors = []
         
@@ -301,8 +339,23 @@ class PredictionEngine:
         has_betting_data = prediction_result.get('contrarian_spread') is not None
         confidence_factors.append(0.1 if has_betting_data else 0.0)
         
+        # Factor variance adjustment (affects confidence by ±0.3)
+        variance_adjustment = 0.0
+        if variance_analysis:
+            variance_level = variance_analysis.get('variance_level', '')
+            if variance_level == 'consensus':
+                variance_adjustment = 0.25  # High confidence bonus
+            elif variance_level == 'mild':
+                variance_adjustment = 0.1   # Mild confidence bonus
+            elif variance_level == 'moderate':
+                variance_adjustment = -0.1  # Mild confidence penalty
+            elif variance_level == 'strong':
+                variance_adjustment = -0.2  # Strong confidence penalty
+            elif variance_level == 'extreme':
+                variance_adjustment = -0.3  # Maximum confidence penalty
+        
         # Total confidence score
-        total_confidence = sum(confidence_factors)
+        total_confidence = sum(confidence_factors) + variance_adjustment
         
         # Ensure confidence is between 0.15 and 0.95 (never completely certain/uncertain)
         return max(0.15, min(0.95, total_confidence))

@@ -142,7 +142,16 @@ class DataManager:
             context['vegas_spread'] = None
             context['has_betting_data'] = False
         
-        # Get team data for both teams
+        # PRODUCTION: If no betting line, return minimal context - don't fetch expensive data
+        if context['vegas_spread'] is None:
+            self.logger.info(f"No betting line available for {away_team} @ {home_team} - returning minimal context")
+            context['home_team_data'] = {}
+            context['away_team_data'] = {}
+            context['coaching_comparison'] = {}
+            context['data_quality'] = 0.0
+            return context
+        
+        # Get team data for both teams (only if we have a betting line)
         context['home_team_data'] = self.get_team_data(home_team)
         context['away_team_data'] = self.get_team_data(away_team)
         

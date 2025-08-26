@@ -66,17 +66,22 @@ class CFBDataClient:
         
         self.logger.info("CFBD API client initialized")
     
-    def get_coaching_data(self, team_name: str, year: int = 2024) -> Dict[str, Any]:
+    def get_coaching_data(self, team_name: str, year: int = None) -> Dict[str, Any]:
         """
         Get coaching staff data for a team.
         
         Args:
             team_name: Normalized team name
-            year: Season year
+            year: Season year (defaults to current season)
             
         Returns:
             Dictionary with coaching information including experience
         """
+        if year is None:
+            # Use current season based on month
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            year = current_year if current_month >= 8 else current_year - 1
         # Check cache
         cache_key = f"coaching_{year}"
         cached_data = self.cache.get_team_data(team_name, cache_key)
@@ -103,8 +108,14 @@ class CFBDataClient:
             
             coaches_data = response.json()
             
-            # Process coaching data
+            # Process coaching data with full history
             coaching_info = self._process_coaching_data(coaches_data, team_name, year)
+            
+            # If we got a coach name, fetch their full history for accurate experience
+            if coaching_info.get('head_coach_name') and coaching_info['head_coach_name'] != f"{team_name} Head Coach":
+                full_experience = self._fetch_coach_full_experience(coaching_info['head_coach_name'])
+                if full_experience > coaching_info['head_coach_experience']:
+                    coaching_info['head_coach_experience'] = full_experience
             
             # Cache the result
             self.cache.cache_team_data(team_name, coaching_info, cache_key, ttl=86400)  # 24 hour cache
@@ -116,17 +127,22 @@ class CFBDataClient:
             self.logger.error(f"Error fetching CFBD coaching data for {team_name}: {e}")
             return self._get_default_coaching_data(team_name)
     
-    def get_team_stats(self, team_name: str, year: int = 2024) -> Dict[str, Any]:
+    def get_team_stats(self, team_name: str, year: int = None) -> Dict[str, Any]:
         """
         Get comprehensive team statistics.
         
         Args:
             team_name: Normalized team name
-            year: Season year
+            year: Season year (defaults to current season)
             
         Returns:
             Dictionary with team statistics
         """
+        if year is None:
+            # Use current season based on month
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            year = current_year if current_month >= 8 else current_year - 1
         # Check cache
         cache_key = f"cfbd_stats_{year}"
         cached_data = self.cache.get_team_data(team_name, cache_key)
@@ -166,17 +182,22 @@ class CFBDataClient:
             self.logger.error(f"Error fetching CFBD stats for {team_name}: {e}")
             return self._get_default_stats_data(team_name)
     
-    def get_team_ratings(self, team_name: str, year: int = 2024) -> Dict[str, Any]:
+    def get_team_ratings(self, team_name: str, year: int = None) -> Dict[str, Any]:
         """
         Get team ratings (SP+, FPI, etc.).
         
         Args:
             team_name: Normalized team name
-            year: Season year
+            year: Season year (defaults to current season)
             
         Returns:
             Dictionary with team ratings
         """
+        if year is None:
+            # Use current season based on month
+            current_year = datetime.now().year
+            current_month = datetime.now().month
+            year = current_year if current_month >= 8 else current_year - 1
         # Check cache
         cache_key = f"cfbd_ratings_{year}"
         cached_data = self.cache.get_team_data(team_name, cache_key)
@@ -300,7 +321,7 @@ class CFBDataClient:
         head_coach = coaches_data[0]
         
         # Calculate experience based on coaching history
-        coach_name = f"{head_coach.get('first_name', '') or ''} {head_coach.get('last_name', '') or ''}".strip()
+        coach_name = f"{head_coach.get('firstName', '') or ''} {head_coach.get('lastName', '') or ''}".strip()
         
         # If no name is available, use a generic placeholder
         if not coach_name:
@@ -327,6 +348,48 @@ class CFBDataClient:
             'status': status,
             'last_updated': datetime.now().isoformat()
         }
+    
+    def _fetch_coach_full_experience(self, coach_name: str) -> int:
+        """Fetch full coaching experience by searching coach history."""
+        try:
+            # Parse coach name
+            name_parts = coach_name.split()
+            if len(name_parts) < 2:
+                return 3  # Default if name parsing fails
+            
+            first_name = name_parts[0]
+            last_name = ' '.join(name_parts[1:])  # Handle names like "Van Der Kamp"
+            
+            # Rate limiting
+            self.rate_limiter.wait_if_needed()
+            
+            # Search for coach by name to get full history
+            url = f"{self.base_url}/coaches"
+            params = {
+                'firstName': first_name,
+                'lastName': last_name
+            }
+            
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code != 200:
+                return 3  # Default on API error
+            
+            coaches_data = response.json()
+            if not coaches_data:
+                return 3  # Default if no data
+            
+            # Count all unique years coached
+            years = set()
+            for coach_record in coaches_data:
+                for season in coach_record.get('seasons', []):
+                    years.add(season.get('year'))
+            
+            return len(years) if years else 3
+            
+        except Exception as e:
+            self.logger.warning(f"Error fetching full experience for {coach_name}: {e}")
+            return 3  # Default on error
     
     def _calculate_coaching_experience(self, coach_data: Dict, current_year: int) -> int:
         """Calculate total head coaching experience."""
@@ -592,6 +655,47 @@ class CFBDataClient:
             
         except Exception as e:
             self.logger.error(f"Error fetching CFBD betting lines: {e}")
+            return []
+
+    def get_advanced_stats(self, year: int = 2024, team: Optional[str] = None, 
+                          **kwargs) -> List[Dict[str, Any]]:
+        """
+        Get advanced team statistics from CFBD API for StyleMismatch analysis.
+        
+        Args:
+            year: Season year
+            team: Specific team name (optional)
+            **kwargs: Additional query parameters
+            
+        Returns:
+            List of advanced stats dictionaries with EPA, success rates, explosiveness
+        """
+        params = {'year': year}
+        
+        if team:
+            # Normalize team name for API consistency
+            params['team'] = normalizer.normalize(team)
+        
+        # Add any additional parameters
+        params.update(kwargs)
+        
+        try:
+            # Rate limiting
+            self.rate_limiter.wait_if_needed()
+            
+            url = f"{self.base_url}/stats/season/advanced"
+            response = self.session.get(url, params=params, timeout=30)
+            
+            if response.status_code != 200:
+                self.logger.warning(f"CFBD API returned {response.status_code} for advanced stats")
+                return []
+            
+            data = response.json()
+            self.logger.info(f"Retrieved {len(data)} advanced stats records from CFBD API")
+            return data
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching CFBD advanced stats: {e}")
             return []
 
 

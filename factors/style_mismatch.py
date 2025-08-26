@@ -35,7 +35,7 @@ class StyleMismatchCalculator(BaseFactorCalculator):
         
         # Hierarchical system configuration
         self.factor_type = FactorType.SECONDARY
-        self.activation_threshold = 1.5
+        self.activation_threshold = 0.05  # Very low threshold for advanced stats analysis
         self.max_impact = 4.0
         
         # Factor-specific parameters
@@ -64,6 +64,10 @@ class StyleMismatchCalculator(BaseFactorCalculator):
         
         year = context.get('year', 2024)
         
+        # For 2025 data, fall back to 2024 for advanced stats analysis
+        if year >= 2025:
+            year = 2024
+        
         # Get advanced stats for both teams
         home_stats = self._get_team_advanced_stats(home_team, year)
         away_stats = self._get_team_advanced_stats(away_team, year)
@@ -76,48 +80,82 @@ class StyleMismatchCalculator(BaseFactorCalculator):
         success_mismatch = self._calculate_success_rate_mismatch(home_stats, away_stats)
         explosiveness_mismatch = self._calculate_explosiveness_mismatch(home_stats, away_stats)
         pace_mismatch = self._calculate_pace_mismatch(home_stats, away_stats)
-        redzone_mismatch = self._calculate_redzone_mismatch(home_stats, away_stats)
+        style_mismatch = self._calculate_run_pass_mismatch(home_stats, away_stats)
         havoc_mismatch = self._calculate_havoc_mismatch(home_stats, away_stats)
         
-        # Weighted combination
+        # Weighted combination (updated weights for better analysis)
         adjustment = (
             success_mismatch * self.config['success_rate_weight'] +
             explosiveness_mismatch * self.config['explosiveness_weight'] +
             pace_mismatch * self.config['pace_mismatch_weight'] +
-            redzone_mismatch * self.config['redzone_weight'] +
+            style_mismatch * 1.0 +  # New style mismatch component
             havoc_mismatch * self.config['havoc_weight']
-        ) / 6.5  # Normalize by total weights
+        ) / 6.0  # Normalize by total weights
         
         # Log significant findings
         if abs(adjustment) > self.activation_threshold:
             self.logger.info(f"Style mismatch detected: {home_team} vs {away_team}")
             self.logger.info(f"  Success: {success_mismatch:+.2f}, Explosive: {explosiveness_mismatch:+.2f}")
-            self.logger.info(f"  Pace: {pace_mismatch:+.2f}, RedZone: {redzone_mismatch:+.2f}")
+            self.logger.info(f"  Pace: {pace_mismatch:+.2f}, Style: {style_mismatch:+.2f}, Havoc: {havoc_mismatch:+.2f}")
             self.logger.info(f"  Total adjustment: {adjustment:+.2f}")
         
         return self.validate_output(adjustment)
     
     def _get_team_advanced_stats(self, team: str, year: int) -> Optional[Dict[str, Any]]:
-        """Fetch advanced statistics for a team."""
+        """Fetch advanced statistics for a team using real CFBD data."""
         try:
-            # Get team stats from CFBD
-            stats = self.cfbd_client.get_team_stats(team, year)
-            if not stats:
+            # Get advanced stats from CFBD API
+            advanced_stats = self.cfbd_client.get_advanced_stats(year=year, team=team)
+            
+            if not advanced_stats:
+                self.logger.debug(f"No advanced stats found for {team} in {year}")
                 return None
             
-            # Extract relevant advanced metrics
-            return {
-                'success_rate_off': stats.get('offense', {}).get('successRate', 0.40),
-                'success_rate_def': stats.get('defense', {}).get('successRate', 0.40),
-                'explosiveness_off': stats.get('offense', {}).get('explosiveness', 1.0),
-                'explosiveness_def': stats.get('defense', {}).get('explosiveness', 1.0),
-                'plays_per_game': stats.get('offense', {}).get('playsPerGame', 70),
-                'havoc_rate': stats.get('defense', {}).get('havocRate', 0.15),
-                'redzone_off': stats.get('offense', {}).get('redzoneSuccess', 0.80),
-                'redzone_def': stats.get('defense', {}).get('redzoneSuccess', 0.80),
-                'ppa_off': stats.get('offense', {}).get('ppa', 0.0),
-                'ppa_def': stats.get('defense', {}).get('ppa', 0.0)
+            # Extract the team's stats (first record should be the team we requested)
+            team_stats = advanced_stats[0]
+            offense = team_stats.get('offense', {})
+            defense = team_stats.get('defense', {})
+            
+            # Extract the key metrics for style mismatch analysis
+            advanced_metrics = {
+                # Overall success rates (most predictive)
+                'success_rate_off': offense.get('successRate', 0.40),
+                'success_rate_def': defense.get('successRate', 0.40),
+                
+                # Explosiveness (big play rates)
+                'explosiveness_off': offense.get('explosiveness', 1.0),
+                'explosiveness_def': defense.get('explosiveness', 1.0),
+                
+                # PPA (Points Per Attempt) - efficiency metric
+                'ppa_off': offense.get('ppa', 0.0),
+                'ppa_def': defense.get('ppa', 0.0),
+                
+                # Pace metrics
+                'plays_per_game': offense.get('plays', 70) / max(1, team_stats.get('season', 1)),  # Estimate PPG
+                
+                # Havoc rate (chaos generation)
+                'havoc_rate': defense.get('havoc', {}).get('total', 0.15),
+                
+                # Situational metrics
+                'standard_downs_success_off': offense.get('standardDowns', {}).get('successRate', 0.45),
+                'passing_downs_success_off': offense.get('passingDowns', {}).get('successRate', 0.25),
+                'standard_downs_success_def': defense.get('standardDowns', {}).get('successRate', 0.45),
+                'passing_downs_success_def': defense.get('passingDowns', {}).get('successRate', 0.25),
+                
+                # Rushing vs Passing efficiency
+                'rushing_success_off': offense.get('rushingPlays', {}).get('successRate', 0.40),
+                'passing_success_off': offense.get('passingPlays', {}).get('successRate', 0.50),
+                'rushing_success_def': defense.get('rushingPlays', {}).get('successRate', 0.40),
+                'passing_success_def': defense.get('passingPlays', {}).get('successRate', 0.50),
+                
+                # Power/Stuff rates for short yardage
+                'power_success_off': offense.get('powerSuccess', 0.70),
+                'stuff_rate_def': defense.get('stuffRate', 0.15)
             }
+            
+            self.logger.debug(f"Retrieved advanced stats for {team}: Success Rate {advanced_metrics['success_rate_off']:.3f} off, {advanced_metrics['success_rate_def']:.3f} def")
+            
+            return advanced_metrics
             
         except Exception as e:
             self.logger.error(f"Error fetching advanced stats for {team}: {e}")
@@ -126,45 +164,79 @@ class StyleMismatchCalculator(BaseFactorCalculator):
     def _calculate_success_rate_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
         """
         Success rate differential is the most predictive advanced metric.
-        Compare offensive success vs defensive success allowed.
+        Analyze overall success rates plus situational breakdowns.
         """
-        # Home offense vs Away defense
+        mismatches = []
+        
+        # Overall success rate matchup
         home_off_advantage = home_stats['success_rate_off'] - away_stats['success_rate_def']
-        
-        # Away offense vs Home defense  
         away_off_advantage = away_stats['success_rate_off'] - home_stats['success_rate_def']
+        overall_advantage = home_off_advantage - away_off_advantage
         
-        # Net advantage (positive favors home)
-        net_advantage = home_off_advantage - away_off_advantage
+        if abs(overall_advantage) > self.config['min_success_diff']:
+            mismatches.append(('overall', overall_advantage * 8))  # Primary weight
         
-        # Scale based on magnitude
-        if abs(net_advantage) > self.config['min_success_diff']:
-            return net_advantage * 10  # Convert to points scale
+        # Standard downs success rate (early down efficiency)
+        home_std_advantage = home_stats['standard_downs_success_off'] - away_stats['standard_downs_success_def']
+        away_std_advantage = away_stats['standard_downs_success_off'] - home_stats['standard_downs_success_def']
+        std_advantage = home_std_advantage - away_std_advantage
+        
+        if abs(std_advantage) > 0.05:  # 5% threshold for situational stats
+            mismatches.append(('standard_downs', std_advantage * 4))
+        
+        # Passing downs success rate (3rd downs, clutch situations)
+        home_pass_advantage = home_stats['passing_downs_success_off'] - away_stats['passing_downs_success_def']
+        away_pass_advantage = away_stats['passing_downs_success_off'] - home_stats['passing_downs_success_def']
+        pass_advantage = home_pass_advantage - away_pass_advantage
+        
+        if abs(pass_advantage) > 0.05:
+            mismatches.append(('passing_downs', pass_advantage * 6))  # More weight for clutch situations
+        
+        # Log significant mismatches
+        if mismatches:
+            self.logger.debug(f"Success rate mismatches detected: {[f'{name}: {val:+.2f}' for name, val in mismatches]}")
+        
+        # Return weighted average of mismatches
+        if mismatches:
+            return sum(val for _, val in mismatches) / len(mismatches)
         return 0.0
     
     def _calculate_explosiveness_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
         """
         Explosiveness mismatches create high variance, which helps underdogs.
-        Check if explosive offense faces weak explosive defense.
+        Analyze explosive play differential and PPA efficiency.
         """
-        # Home explosive plays vs Away explosive defense
-        home_explosive_edge = home_stats['explosiveness_off'] / (away_stats['explosiveness_def'] + 0.1)
+        mismatches = []
         
-        # Away explosive plays vs Home explosive defense
-        away_explosive_edge = away_stats['explosiveness_off'] / (home_stats['explosiveness_def'] + 0.1)
+        # Explosive play rate differential
+        home_exp_advantage = home_stats['explosiveness_off'] - away_stats['explosiveness_def']
+        away_exp_advantage = away_stats['explosiveness_off'] - home_stats['explosiveness_def']
+        exp_differential = home_exp_advantage - away_exp_advantage
         
-        # High variance situations favor underdogs
-        variance_factor = (home_explosive_edge + away_explosive_edge) / 2
+        if abs(exp_differential) > 0.5:  # Significant explosiveness gap
+            mismatches.append(('explosiveness', exp_differential * 1.5))
         
-        # Net advantage with variance adjustment
-        if variance_factor > 1.3:  # High variance game
-            # Slightly favor underdog (typically away team)
-            return -0.5
-        elif home_explosive_edge > away_explosive_edge * 1.2:
-            return 1.0
-        elif away_explosive_edge > home_explosive_edge * 1.2:
-            return -1.0
+        # PPA (Points Per Attempt) efficiency differential
+        home_ppa_advantage = home_stats['ppa_off'] - away_stats['ppa_def']
+        away_ppa_advantage = away_stats['ppa_off'] - home_stats['ppa_def']
+        ppa_differential = home_ppa_advantage - away_ppa_advantage
         
+        if abs(ppa_differential) > 0.1:  # PPA differences matter
+            mismatches.append(('ppa_efficiency', ppa_differential * 3))
+        
+        # High variance bonus (helps underdogs in chaotic games)
+        total_explosiveness = home_stats['explosiveness_off'] + away_stats['explosiveness_off']
+        if total_explosiveness > 3.0:  # Both teams explosive
+            # Slight underdog advantage in high-variance games
+            variance_bonus = -0.3 if exp_differential > 0 else 0.3
+            mismatches.append(('variance_bonus', variance_bonus))
+        
+        # Log significant mismatches
+        if mismatches:
+            self.logger.debug(f"Explosiveness mismatches: {[f'{name}: {val:+.2f}' for name, val in mismatches]}")
+        
+        if mismatches:
+            return sum(val for _, val in mismatches) / len(mismatches)
         return 0.0
     
     def _calculate_pace_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
@@ -187,25 +259,45 @@ class StyleMismatchCalculator(BaseFactorCalculator):
         
         return 0.0
     
-    def _calculate_redzone_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
+    def _calculate_run_pass_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
         """
-        Red zone efficiency mismatches determine scoring conversion.
-        Critical for close games and covering spreads.
+        Analyze rushing vs passing style mismatches.
+        Some teams are built to stop the run but weak vs pass and vice versa.
         """
-        # Home red zone offense vs Away red zone defense
-        home_rz_advantage = home_stats['redzone_off'] - away_stats['redzone_def']
+        mismatches = []
         
-        # Away red zone offense vs Home red zone defense
-        away_rz_advantage = away_stats['redzone_off'] - home_stats['redzone_def']
+        # Rushing attack vs run defense
+        home_run_advantage = home_stats['rushing_success_off'] - away_stats['rushing_success_def']
+        away_run_advantage = away_stats['rushing_success_off'] - home_stats['rushing_success_def']
+        run_differential = home_run_advantage - away_run_advantage
         
-        # Net red zone advantage
-        net_advantage = home_rz_advantage - away_rz_advantage
+        if abs(run_differential) > 0.08:  # 8% rushing success rate gap
+            mismatches.append(('rushing_mismatch', run_differential * 4))
         
-        # Red zone efficiency gaps are critical
-        if abs(net_advantage) > 0.10:  # 10% difference
-            return net_advantage * 5  # Scale to points
+        # Passing attack vs pass defense
+        home_pass_advantage = home_stats['passing_success_off'] - away_stats['passing_success_def']
+        away_pass_advantage = away_stats['passing_success_off'] - home_stats['passing_success_def']
+        pass_differential = home_pass_advantage - away_pass_advantage
         
+        if abs(pass_differential) > 0.08:  # 8% passing success rate gap
+            mismatches.append(('passing_mismatch', pass_differential * 4))
+        
+        # Power success vs stuff rate (short yardage situations)
+        home_power_advantage = home_stats['power_success_off'] - (away_stats['stuff_rate_def'] * 2)  # Convert stuff rate to power resistance
+        away_power_advantage = away_stats['power_success_off'] - (home_stats['stuff_rate_def'] * 2)
+        power_differential = home_power_advantage - away_power_advantage
+        
+        if abs(power_differential) > 0.15:  # 15% power differential
+            mismatches.append(('power_mismatch', power_differential * 2))
+        
+        # Log significant style mismatches
+        if mismatches:
+            self.logger.debug(f"Run/Pass style mismatches: {[f'{name}: {val:+.2f}' for name, val in mismatches]}")
+        
+        if mismatches:
+            return sum(val for _, val in mismatches) / len(mismatches)
         return 0.0
+    
     
     def _calculate_havoc_mismatch(self, home_stats: Dict, away_stats: Dict) -> float:
         """
@@ -310,7 +402,7 @@ class StyleMismatchCalculator(BaseFactorCalculator):
     def get_required_data(self) -> Dict[str, bool]:
         """Declare required data."""
         return {
-            'team_stats': True,        # Required for advanced metrics
+            'team_stats': False,       # Fetched directly via CFBD advanced stats
             'team_info': False,
             'coaching_data': False,
             'schedule_data': False,

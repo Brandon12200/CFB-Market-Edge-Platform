@@ -154,41 +154,38 @@ class FactorRegistry:
                 self.logger.debug(f"Configured {factor_name} as SECONDARY factor")
     
     def _validate_and_normalize_weights(self) -> None:
-        """Validate and normalize factor weights within categories."""
-        # Group factors by category
-        category_factors = {}
-        for factor_name, factor in self.factors.items():
-            category = factor.category
-            if category not in category_factors:
-                category_factors[category] = []
-            category_factors[category].append(factor)
-        
-        # Normalize weights within each category
-        for category, factors in category_factors.items():
-            if category not in self.category_weights:
-                self.logger.warning(f"Unknown category: {category}")
-                continue
-            
-            # Calculate current total weight in category
-            current_total = sum(f.weight for f in factors)
-            
-            if current_total == 0:
-                # Distribute weight evenly if no weights set
-                target_weight = self.category_weights[category] / len(factors)
-                for factor in factors:
-                    factor.weight = target_weight
-            else:
-                # Normalize to category target weight
-                normalization_factor = self.category_weights[category] / current_total
-                for factor in factors:
-                    factor.weight *= normalization_factor
-            
-            self.logger.debug(f"Normalized {category} factors to total weight: {self.category_weights[category]}")
-        
-        # Validate total weights sum to 1.0
+        """Validate and normalize factor weights to sum to 1.0."""
+        # Calculate current total weight across all factors
         total_weight = sum(f.weight for f in self.factors.values())
-        if abs(total_weight - 1.0) > 0.001:
-            self.logger.warning(f"Total factor weights sum to {total_weight:.3f}, expected 1.0")
+        
+        if total_weight == 0:
+            # If no weights set, distribute evenly
+            equal_weight = 1.0 / len(self.factors)
+            for factor in self.factors.values():
+                factor.normalized_weight = equal_weight
+            self.logger.warning("No weights set, using equal distribution")
+        else:
+            # Normalize all weights to sum to 1.0
+            normalization_factor = 1.0 / total_weight
+            for factor_name, factor in self.factors.items():
+                # Store both original and normalized weights
+                factor.original_weight = factor.weight
+                factor.normalized_weight = factor.weight * normalization_factor
+                # Use normalized weight for calculations
+                factor.weight = factor.normalized_weight
+            
+            self.logger.info(f"Normalized {len(self.factors)} factor weights (was {total_weight:.2f}, now 1.00)")
+            
+            # Log the normalized weights for transparency
+            for factor_name, factor in self.factors.items():
+                self.logger.debug(f"  {factor_name}: {factor.original_weight:.3f} -> {factor.normalized_weight:.3f}")
+        
+        # Final validation
+        final_total = sum(f.weight for f in self.factors.values())
+        if abs(final_total - 1.0) > 0.001:
+            self.logger.error(f"Normalization failed! Total weight is {final_total:.3f}")
+        else:
+            self.logger.info("Factor weights successfully normalized to 1.0")
     
     def calculate_all_factors(self, home_team: str, away_team: str, 
                             context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

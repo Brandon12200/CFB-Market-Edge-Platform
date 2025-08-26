@@ -52,8 +52,86 @@ class ESPNStatsClient:
             'Accept': 'application/json'
         })
         
-        # Team ID cache (ESPN uses numeric IDs)
-        self.team_id_cache = {}
+        # Team ID cache (ESPN uses numeric IDs) - pre-populate with known IDs
+        self.team_id_cache = {
+            'OHIO STATE': 194,
+            'MICHIGAN': 130,
+            'TEXAS': 251,
+            'ALABAMA': 333,
+            'GEORGIA': 61,
+            'FLORIDA': 57,
+            'LSU': 99,
+            'CLEMSON': 228,
+            'NOTRE DAME': 87,
+            'USC': 30,
+            'PENN STATE': 213,
+            'OKLAHOMA': 201,
+            'TENNESSEE': 2633,
+            'AUBURN': 2,
+            'WISCONSIN': 275,
+            'IOWA': 2294,
+            'NEBRASKA': 158,
+            'OREGON': 2483,
+            'WASHINGTON': 264,
+            'MICHIGAN STATE': 127,
+            'FLORIDA STATE': 52,
+            'MIAMI': 2390,
+            'VIRGINIA TECH': 259,
+            'NORTH CAROLINA': 153,
+            'NC STATE': 152,
+            'STANFORD': 24,
+            'UCLA': 26,
+            'ARIZONA': 12,
+            'ARIZONA STATE': 9,
+            'COLORADO': 38,
+            'UTAH': 254,
+            'WEST VIRGINIA': 277,
+            'TEXAS A&M': 245,
+            'ARKANSAS': 8,
+            'MISSISSIPPI': 145,
+            'MISSISSIPPI STATE': 344,
+            'KENTUCKY': 96,
+            'SOUTH CAROLINA': 2579,
+            'VANDERBILT': 238,
+            'MISSOURI': 142,
+            'KANSAS': 2305,
+            'KANSAS STATE': 2306,
+            'IOWA STATE': 66,
+            'OKLAHOMA STATE': 197,
+            'TCU': 2628,
+            'TEXAS TECH': 2641,
+            'BAYLOR': 239,
+            'MINNESOTA': 135,
+            'ILLINOIS': 356,
+            'INDIANA': 84,
+            'PURDUE': 2509,
+            'NORTHWESTERN': 77,
+            'MARYLAND': 120,
+            'RUTGERS': 164,
+            'BOSTON COLLEGE': 103,
+            'SYRACUSE': 183,
+            'PITTSBURGH': 221,
+            'DUKE': 150,
+            'WAKE FOREST': 154,
+            'GEORGIA TECH': 59,
+            'LOUISVILLE': 97,
+            'VIRGINIA': 258,
+            'OREGON STATE': 204,
+            'WASHINGTON STATE': 265,
+            'CALIFORNIA': 25,
+            'CINCINNATI': 2132,
+            'HOUSTON': 248,
+            'SMU': 2567,
+            'MEMPHIS': 235,
+            'TULANE': 2655,
+            'UCF': 2116,
+            'SOUTH FLORIDA': 58,
+            'TEMPLE': 218,
+            'EAST CAROLINA': 151,
+            'NAVY': 2426,
+            'ARMY': 349,
+            'AIR FORCE': 2005
+        }
         
         # Logging
         self.logger = logging.getLogger(__name__)
@@ -236,17 +314,16 @@ class ESPNStatsClient:
             Dictionary with team statistics
         """
         if year is None:
-            # Use the most recent completed season (2024 as of August 2025)
+            # Use current season based on month
             current_year = datetime.now().year
             current_month = datetime.now().month
             
             # If we're in early months (Jan-July), use previous year
-            # If we're in Aug+, try current year but fallback to previous if needed
+            # If we're in Aug+, use current year (season has started)
             if current_month < 8:
                 year = current_year - 1
             else:
-                # Try current year first, but we'll fallback to 2024 if it fails
-                year = min(current_year, 2024)  # Cap at 2024 for now
+                year = current_year
         
         # Check cache
         cache_key = f"stats_{year}"
