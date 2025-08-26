@@ -1,5 +1,5 @@
 """
-Rate limiting infrastructure for CFB Contrarian Predictor.
+Rate limiting infrastructure for College Football Market Edge Platform.
 Prevents API quota violations and ensures compliance with rate limits.
 """
 

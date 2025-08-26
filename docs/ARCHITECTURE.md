@@ -1,4 +1,4 @@
-# System Architecture
+# College Football Market Edge Platform - System Architecture
 
 ## High-Level Data Flow
 
@@ -229,7 +229,7 @@ Bulk Analysis (10 games)
 ## File Structure
 
 ```
-cfb-contrarian-predictor/
+college-football-market-edge/
 ├── main.py                 # Entry point & CLI
 ├── engine/
 │   ├── prediction_engine.py # Core orchestration

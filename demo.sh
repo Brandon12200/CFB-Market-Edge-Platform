@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# CFB Contrarian Predictor - Demo Script
+# College Football Market Edge Platform - Demo Script
 # Shows the full capabilities of the system
 
 echo "================================================"
-echo "  CFB Contrarian Predictor - Live Demo"
+echo "  College Football Market Edge Platform - Live Demo"
 echo "================================================"
 echo ""
 

@@ -1,5 +1,5 @@
 """
-Edge detector for CFB Contrarian Predictor.
+Edge detector for College Football Market Edge Platform.
 Identifies and classifies contrarian betting opportunities.
 """
 

@@ -1,5 +1,5 @@
 """
-Team name normalization system for CFB Contrarian Predictor.
+Team name normalization system for College Football Market Edge Platform.
 Handles mapping between different API formats and user inputs for 130+ FBS teams.
 """
 

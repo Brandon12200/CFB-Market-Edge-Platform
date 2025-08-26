@@ -1,5 +1,5 @@
 """
-Factor Validation System for CFB Contrarian Predictor.
+Factor Validation System for College Football Market Edge Platform.
 
 Tests factors for:
 1. Realistic vs uniform outputs

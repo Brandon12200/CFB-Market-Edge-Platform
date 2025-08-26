@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CFB Contrarian Predictor - Command Line Interface
+College Football Market Edge Platform - Command Line Interface
 
 Main entry point for the college football betting analysis tool.
 Identifies contrarian opportunities by layering human factor adjustments 
@@ -70,13 +70,13 @@ def _get_current_week() -> int:
 
 def parse_arguments() -> argparse.Namespace:
     """
-    Parse command line arguments for the CFB Contrarian Predictor.
+    Parse command line arguments for the College Football Market Edge Platform.
     
     Returns:
         argparse.Namespace: Parsed command line arguments
     """
     parser = argparse.ArgumentParser(
-        description='CFB Contrarian Predictor - Find contrarian college football betting opportunities',
+        description='College Football Market Edge Platform - Find contrarian college football betting opportunities',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -176,7 +176,7 @@ Examples:
     utility_group.add_argument(
         '--version',
         action='version',
-        version='CFB Contrarian Predictor v2.0'
+        version='College Football Market Edge Platform v2.0'
     )
     
     # Debug options
@@ -352,7 +352,7 @@ def validate_teams(home_team: str, away_team: str) -> tuple[Optional[str], Optio
 def list_teams() -> None:
     """Display all supported team names and aliases."""
     _ensure_imports()
-    print("CFB Contrarian Predictor - Supported Teams")
+    print("College Football Market Edge Platform - Supported Teams")
     print("=" * 50)
     print()
     
@@ -499,7 +499,7 @@ def check_configuration() -> bool:
         bool: True if configuration is valid
     """
     _ensure_imports()
-    print("CFB Contrarian Predictor - Configuration Check")
+    print("College Football Market Edge Platform - Configuration Check")
     print("=" * 50)
     
     # Check API keys
@@ -928,7 +928,7 @@ def _display_games_simple(games):
 
 def main() -> int:
     """
-    Main entry point for the CFB Contrarian Predictor CLI.
+    Main entry point for the College Football Market Edge Platform CLI.
     
     Returns:
         int: Exit code (0 for success, 1 for error)

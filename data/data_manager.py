@@ -1,5 +1,5 @@
 """
-Unified data manager for CFB Contrarian Predictor.
+Unified data manager for College Football Market Edge Platform.
 Coordinates data access across multiple APIs with fallback and error handling.
 """
 

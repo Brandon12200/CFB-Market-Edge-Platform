@@ -1,4 +1,4 @@
-# CFB Contrarian Predictor
+# College Football Market Edge Platform
 
 A systematic approach to identifying contrarian opportunities in college football betting markets through quantitative factor analysis and market inefficiency detection.
 
@@ -18,8 +18,8 @@ This tool analyzes college football games by applying quantifiable "contrarian f
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cfb-contrarian-predictor.git
-cd cfb-contrarian-predictor
+git clone https://github.com/YOUR_USERNAME/college-football-market-edge.git
+cd college-football-market-edge
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt

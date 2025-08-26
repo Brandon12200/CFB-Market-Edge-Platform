@@ -1,5 +1,5 @@
 """
-Variance Detection System for CFB Contrarian Predictor.
+Variance Detection System for College Football Market Edge Platform.
 
 Identifies games where factors strongly disagree, indicating:
 1. High uncertainty / unpredictable games

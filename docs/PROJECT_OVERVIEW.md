@@ -1,4 +1,4 @@
-# CFB Contrarian Predictor - Technical Overview
+# College Football Market Edge Platform - Technical Overview
 
 ## What This Is
 

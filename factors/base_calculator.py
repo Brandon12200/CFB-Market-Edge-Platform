@@ -1,5 +1,5 @@
 """
-Base factor calculator abstract class for CFB Contrarian Predictor.
+Base factor calculator abstract class for College Football Market Edge Platform.
 All factor calculators must inherit from this class to ensure consistent interface.
 """
 

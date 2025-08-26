@@ -1,5 +1,5 @@
 """
-Error handler utility for CFB Contrarian Predictor.
+Error handler utility for College Football Market Edge Platform.
 Provides graceful error handling and recovery mechanisms.
 """
 

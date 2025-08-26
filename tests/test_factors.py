@@ -1,5 +1,5 @@
 """
-Unit tests for factor calculators in CFB Contrarian Predictor.
+Unit tests for factor calculators in College Football Market Edge Platform.
 Tests all factor implementations for correctness and edge cases.
 """
 

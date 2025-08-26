@@ -1,5 +1,5 @@
 """
-Coaching edge factors for CFB Contrarian Predictor.
+Coaching edge factors for College Football Market Edge Platform.
 Implements the four coaching-related factors that comprise 40% of prediction weight.
 """
 

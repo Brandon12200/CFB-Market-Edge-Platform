@@ -1,4 +1,4 @@
-# Performance Benchmarks & Metrics
+# College Football Market Edge Platform - Performance Benchmarks & Metrics
 
 ## System Performance (Measured August 2025)
 

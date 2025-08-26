@@ -1,5 +1,5 @@
 """
-Insights generator for CFB Contrarian Predictor.
+Insights generator for College Football Market Edge Platform.
 Creates human-readable explanations and actionable insights from predictions.
 """
 

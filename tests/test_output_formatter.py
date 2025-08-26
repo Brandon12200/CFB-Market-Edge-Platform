@@ -125,7 +125,7 @@ class TestOutputFormatter(unittest.TestCase):
         )
         
         # Check key sections exist
-        self.assertIn('CFB Contrarian Predictor', output)
+        self.assertIn('College Football Market Edge Platform', output)
         self.assertIn('ALABAMA @ GEORGIA', output)
         self.assertIn('Week 8', output)
         self.assertIn('PREDICTION SUMMARY', output)

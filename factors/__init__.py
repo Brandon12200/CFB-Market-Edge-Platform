@@ -1,5 +1,5 @@
 """
-Factors package for CFB Contrarian Predictor.
+Factors package for College Football Market Edge Platform.
 Contains all factor calculators and the factor registry.
 """
 

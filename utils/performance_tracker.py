@@ -1,5 +1,5 @@
 """
-Performance tracker for CFB Contrarian Predictor.
+Performance tracker for College Football Market Edge Platform.
 Monitors execution times, API calls, and system performance.
 """
 

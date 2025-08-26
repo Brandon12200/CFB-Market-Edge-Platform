@@ -1,5 +1,5 @@
 """
-Factor registry for CFB Contrarian Predictor.
+Factor registry for College Football Market Edge Platform.
 Manages dynamic loading, weight distribution, and execution of all factors.
 """
 

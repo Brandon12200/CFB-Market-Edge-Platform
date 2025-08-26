@@ -1,5 +1,5 @@
 """
-Health check system for CFB Contrarian Predictor.
+Health check system for College Football Market Edge Platform.
 Provides comprehensive system health monitoring and API connectivity checks.
 """
 

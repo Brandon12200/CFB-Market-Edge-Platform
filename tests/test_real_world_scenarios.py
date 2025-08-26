@@ -1,5 +1,5 @@
 """
-Integration tests for real-world scenarios in CFB Contrarian Predictor.
+Integration tests for real-world scenarios in College Football Market Edge Platform.
 Tests specific betting situations and edge cases that occur in practice.
 """
 
@@ -528,7 +528,7 @@ class TestSystemIntegrationFlow(unittest.TestCase):
                 
                 # Validate complete output
                 self.assertIsInstance(formatted_output, str)
-                self.assertIn('CFB Contrarian Predictor', formatted_output)
+                self.assertIn('College Football Market Edge Platform', formatted_output)
                 self.assertIn('GEORGIA', formatted_output)
                 self.assertIn('ALABAMA', formatted_output)
                 self.assertIn('PREDICTION SUMMARY', formatted_output)

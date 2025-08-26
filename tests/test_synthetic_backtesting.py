@@ -1,5 +1,5 @@
 """
-Synthetic backtesting framework for CFB Contrarian Predictor.
+Synthetic backtesting framework for College Football Market Edge Platform.
 Creates realistic test scenarios to validate prediction accuracy.
 """
 

@@ -1,5 +1,5 @@
 """
-ESPN API client for CFB Contrarian Predictor.
+ESPN API client for College Football Market Edge Platform.
 Fetches team information, coaching data, statistics, and schedules.
 """
 

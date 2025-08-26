@@ -1,5 +1,5 @@
 """
-Momentum factors for CFB Contrarian Predictor.
+Momentum factors for College Football Market Edge Platform.
 Implements the three momentum-based factors that comprise 20% of prediction weight.
 """
 

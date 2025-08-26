@@ -1,5 +1,5 @@
 """
-Situational context factors for CFB Contrarian Predictor.
+Situational context factors for College Football Market Edge Platform.
 Implements the four situation-based factors that comprise 40% of prediction weight.
 """
 

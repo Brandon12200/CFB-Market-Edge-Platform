@@ -1,5 +1,5 @@
 """
-Output formatter for CFB Contrarian Predictor.
+Output formatter for College Football Market Edge Platform.
 Handles clean CLI presentation with emojis, tables, and structured output.
 """
 
@@ -125,7 +125,7 @@ class OutputFormatter:
         header_lines = []
         
         # Title
-        title = f"CFB Contrarian Predictor - {away_team} @ {home_team}"
+        title = f"College Football Market Edge Platform - {away_team} @ {home_team}"
         if week:
             title += f" (Week {week})"
         

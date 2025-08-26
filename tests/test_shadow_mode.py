@@ -1,5 +1,5 @@
 """
-Shadow mode testing infrastructure for CFB Contrarian Predictor.
+Shadow mode testing infrastructure for College Football Market Edge Platform.
 Allows tracking predictions and outcomes without affecting user experience.
 """
 

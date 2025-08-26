@@ -1,5 +1,5 @@
 """
-Core prediction engine for CFB Contrarian Predictor.
+Core prediction engine for College Football Market Edge Platform.
 Orchestrates factor calculations and generates contrarian predictions.
 """
 

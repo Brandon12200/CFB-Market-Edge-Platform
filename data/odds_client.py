@@ -1,5 +1,5 @@
 """
-The Odds API client for CFB Contrarian Predictor.
+The Odds API client for College Football Market Edge Platform.
 Fetches betting lines and consensus spreads from multiple bookmakers.
 """
 

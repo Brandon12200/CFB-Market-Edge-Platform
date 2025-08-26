@@ -1,5 +1,5 @@
 """
-Caching system for CFB Contrarian Predictor.
+Caching system for College Football Market Edge Platform.
 Implements session-level caching with TTL to reduce API calls and improve performance.
 """
 

@@ -1,5 +1,5 @@
 """
-Configuration management for CFB Contrarian Predictor.
+Configuration management for College Football Market Edge Platform.
 Handles API keys, rate limits, and application settings.
 """
 

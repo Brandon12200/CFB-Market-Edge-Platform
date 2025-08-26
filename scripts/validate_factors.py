@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Factor Validation Script for CFB Contrarian Predictor.
+Factor Validation Script for College Football Market Edge Platform.
 
 Runs comprehensive validation tests on all factors to ensure they produce
 realistic, varied outputs rather than uniform/unrealistic patterns.
@@ -205,7 +205,7 @@ def format_html_output(validation_results: dict) -> str:
 
 def main():
     """Main validation script."""
-    parser = argparse.ArgumentParser(description='Validate CFB Contrarian Predictor factors')
+    parser = argparse.ArgumentParser(description='Validate College Football Market Edge Platform factors')
     parser.add_argument('--factor', type=str, help='Validate specific factor only')
     parser.add_argument('--quick', action='store_true', help='Run quick validation')
     parser.add_argument('--output', choices=['text', 'json', 'html'], default='text',
@@ -215,7 +215,7 @@ def main():
     
     args = parser.parse_args()
     
-    print("CFB Contrarian Predictor - Factor Validation")
+    print("College Football Market Edge Platform - Factor Validation")
     print("=" * 50)
     
     try:

@@ -1,5 +1,5 @@
 """
-Integration tests for CFB Contrarian Predictor.
+Integration tests for College Football Market Edge Platform.
 Tests the complete prediction pipeline end-to-end.
 """
 

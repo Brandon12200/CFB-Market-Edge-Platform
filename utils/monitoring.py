@@ -1,5 +1,5 @@
 """
-System monitoring and performance tracking for CFB Contrarian Predictor.
+System monitoring and performance tracking for College Football Market Edge Platform.
 Provides comprehensive monitoring, logging, and performance metrics.
 """
 

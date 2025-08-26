@@ -1,5 +1,5 @@
 """
-Confidence calculator for CFB Contrarian Predictor.
+Confidence calculator for College Football Market Edge Platform.
 Assesses the confidence level of predictions based on multiple factors.
 """
 
