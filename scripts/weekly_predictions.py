@@ -27,8 +27,10 @@ sys.path.insert(0, str(project_root))
 
 from engine.prediction_engine import PredictionEngine
 from utils.prediction_storage import prediction_storage
-from utils.normalizer import team_name_normalizer
+from utils.normalizer import TeamNameNormalizer
 from data.data_manager import data_manager
+
+team_name_normalizer = TeamNameNormalizer()
 
 
 def get_current_week() -> int:
@@ -117,7 +119,7 @@ def analyze_games(games: list, min_edge: float = 1.0, min_confidence: float = 60
             print(f"[{i}/{len(games)}] Analyzing {away_team} @ {home_team}...")
             
             # Run prediction
-            result = prediction_engine.predict(home_team, away_team, week=week)
+            result = prediction_engine.generate_prediction(home_team, away_team, week=week)
             
             # Extract key metrics
             edge_size = result.get('edge_size', 0)

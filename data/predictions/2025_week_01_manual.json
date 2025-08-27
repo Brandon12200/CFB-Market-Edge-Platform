@@ -1,0 +1,15 @@
+{
+  "week": 1,
+  "season": 2025,
+  "generated_date": "2025-08-26T19:00:00Z",
+  "prediction_count": 0,
+  "predictions": [],
+  "system_stats": {
+    "total_games_analyzed": 5,
+    "games_with_edges": 0,
+    "hit_rate": 0.0,
+    "average_confidence": 0.0,
+    "average_edge_size": 0.0
+  },
+  "notes": "No betting lines available yet for Week 1 2025. System tested with sample games but requires actual Vegas spreads to generate predictions. Cron job path has been fixed for future weeks."
+}
