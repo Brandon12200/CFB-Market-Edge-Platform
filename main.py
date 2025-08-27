@@ -118,11 +118,26 @@ Examples:
         help='Analyze all games for specified week (defaults to current week if no number provided)'
     )
     batch_group.add_argument(
+        '--analyze-week-p4',
+        type=int,
+        metavar='N',
+        nargs='?',
+        const=0,
+        help='Generate contrarian predictions for all P4 games for specified week (defaults to current week)'
+    )
+    batch_group.add_argument(
         '--min-edge',
         type=float,
         default=3.0,
         metavar='POINTS',
         help='Minimum edge size to display (default: 3.0 points)'
+    )
+    batch_group.add_argument(
+        '--min-confidence',
+        type=float,
+        default=60.0,
+        metavar='PERCENT',
+        help='Minimum confidence percentage to display (default: 60.0%)'
     )
     
     # Output control
@@ -214,8 +229,8 @@ def _validate_arguments(args: argparse.Namespace, parser: argparse.ArgumentParse
         parser: Argument parser for error reporting
     """
     # Check for prediction requirements
-    if not any([args.home, args.analyze_week is not None, args.list_teams, args.list_games,
-                args.validate_team, args.check_config]):
+    if not any([args.home, args.analyze_week is not None, args.analyze_week_p4 is not None, 
+                args.list_teams, args.list_games, args.validate_team, args.check_config]):
         parser.error("Must specify prediction teams (--home/--away) or use utility options")
     
     # Both home and away required for single prediction
@@ -228,6 +243,9 @@ def _validate_arguments(args: argparse.Namespace, parser: argparse.ArgumentParse
     
     if args.analyze_week and args.analyze_week != 0 and not (1 <= args.analyze_week <= 17):
         parser.error("Analyze week must be between 1 and 17")
+    
+    if args.analyze_week_p4 and args.analyze_week_p4 != 0 and not (1 <= args.analyze_week_p4 <= 17):
+        parser.error("Analyze week P4 must be between 1 and 17")
     
     # Edge threshold validation
     if args.min_edge < 0:
@@ -926,6 +944,170 @@ def _display_games_simple(games):
         print(f"{i:2d}. {matchup} | {line:15} {type_str}")
 
 
+def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float = 60.0) -> list:
+    """
+    Run contrarian predictions for all P4 games in a specified week.
+    
+    Args:
+        week: Week number to analyze
+        min_edge: Minimum edge size to include in results
+        min_confidence: Minimum confidence percentage to include in results
+        
+    Returns:
+        List of predictions that meet the minimum thresholds
+    """
+    _ensure_imports()
+    
+    print(f"Generating contrarian predictions for Week {week} P4 games...")
+    print("=" * 70)
+    print(f"Filters: Edge ≥ {min_edge:.1f} points, Confidence ≥ {min_confidence:.1f}%")
+    print()
+    
+    try:
+        # Get all P4 games (reusing logic from run_weekly_analysis)
+        all_games = []
+        
+        # Try to get games with betting lines first
+        if data_manager.odds_client:
+            weekly_data = data_manager.odds_client.get_weekly_spreads(week)
+            betting_games = weekly_data.get('games', [])
+            
+            for game in betting_games:
+                all_games.append({
+                    'home_team': game.get('home_team'),
+                    'away_team': game.get('away_team'),
+                    'spread': game.get('consensus_spread'),
+                    'has_line': True
+                })
+        
+        # Power 4 conference teams
+        power4_teams = {
+            'SEC': ['ALABAMA', 'ARKANSAS', 'AUBURN', 'FLORIDA', 'GEORGIA', 'KENTUCKY', 
+                   'LSU', 'MISSISSIPPI', 'MISSISSIPPI STATE', 'MISSOURI', 'SOUTH CAROLINA', 
+                   'TENNESSEE', 'TEXAS', 'TEXAS A&M', 'VANDERBILT', 'OKLAHOMA'],
+            'BIG TEN': ['ILLINOIS', 'INDIANA', 'IOWA', 'MARYLAND', 'MICHIGAN', 'MICHIGAN STATE',
+                       'MINNESOTA', 'NEBRASKA', 'NORTHWESTERN', 'OHIO STATE', 'PENN STATE',
+                       'PURDUE', 'RUTGERS', 'WISCONSIN', 'UCLA', 'USC', 'OREGON', 'WASHINGTON'],
+            'BIG 12': ['ARIZONA', 'ARIZONA STATE', 'BAYLOR', 'CINCINNATI', 'COLORADO', 'HOUSTON',
+                      'IOWA STATE', 'KANSAS', 'KANSAS STATE', 'OKLAHOMA STATE', 'TCU', 'TEXAS TECH',
+                      'UCF', 'UTAH', 'WEST VIRGINIA', 'BYU'],
+            'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH', 'LOUISVILLE',
+                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITT', 'SYRACUSE',
+                   'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'CALIFORNIA', 'STANFORD', 'SMU'],
+            'INDEPENDENT': ['NOTRE DAME']
+        }
+        
+        # Filter to P4 games only
+        power4_games = []
+        all_power4_teams = set()
+        for conf_teams in power4_teams.values():
+            all_power4_teams.update(conf_teams)
+        
+        for game in all_games:
+            home = game.get('home_team', '').upper()
+            away = game.get('away_team', '').upper()
+            
+            # Filter out FCS teams
+            if normalizer.is_fcs_team(home) or normalizer.is_fcs_team(away):
+                continue
+            
+            # Must have both teams as P4 for full P4 analysis
+            if home in all_power4_teams and away in all_power4_teams:
+                power4_games.append(game)
+        
+        if not power4_games:
+            print("❌ No P4 vs P4 games found for this week")
+            return []
+        
+        print(f"📊 Found {len(power4_games)} P4 vs P4 games with betting lines")
+        print()
+        
+        # Run predictions for each game
+        predictions = []
+        successful_predictions = 0
+        
+        for i, game in enumerate(power4_games, 1):
+            home_team = game['home_team']
+            away_team = game['away_team']
+            
+            print(f"[{i}/{len(power4_games)}] {away_team} @ {home_team}", end=" → ")
+            
+            try:
+                # Generate prediction
+                result = prediction_engine.generate_prediction(home_team, away_team, week=week)
+                
+                # Extract metrics
+                edge_size = result.get('edge_size', 0)
+                confidence = result.get('confidence', 0)
+                
+                print(f"Edge: {edge_size:.1f}, Conf: {confidence:.0f}%", end="")
+                
+                # Check if this meets our thresholds
+                if edge_size >= min_edge and confidence >= min_confidence:
+                    # Extract prediction details
+                    vegas_spread = result.get('vegas_spread', 'Unknown')
+                    recommendation = result.get('recommendation', 'No recommendation')
+                    data_quality = result.get('data_quality', 0)
+                    factor_breakdown = result.get('factor_breakdown', {})
+                    reasoning = result.get('reasoning', '')
+                    
+                    # Create prediction entry
+                    from utils.prediction_storage import prediction_storage
+                    prediction = prediction_storage.create_prediction_entry(
+                        home_team=home_team,
+                        away_team=away_team,
+                        vegas_spread=vegas_spread,
+                        predicted_edge=edge_size,
+                        confidence=confidence,
+                        recommendation=recommendation,
+                        factor_breakdown=factor_breakdown,
+                        data_quality=data_quality,
+                        week=week,
+                        rationale=reasoning
+                    )
+                    
+                    predictions.append(prediction)
+                    successful_predictions += 1
+                    print(f" ✅ EDGE FOUND!")
+                else:
+                    print(f" ❌")
+                
+                # Short delay to prevent overwhelming APIs
+                import time
+                time.sleep(0.5)
+                
+            except Exception as e:
+                print(f" 🚨 ERROR")
+                continue
+        
+        # Summary
+        print("=" * 70)
+        print("PREDICTION RESULTS")
+        print("=" * 70)
+        
+        if predictions:
+            print(f"✅ Found {successful_predictions} contrarian opportunities:")
+            print()
+            
+            for i, pred in enumerate(predictions, 1):
+                print(f"{i:2d}. {pred['recommendation']}")
+                print(f"     Game: {pred['away_team']} @ {pred['home_team']}")
+                print(f"     Edge: {pred['predicted_edge']:.1f} pts | Confidence: {pred['confidence']:.1f}%")
+                if pred.get('bet_rationale'):
+                    print(f"     Rationale: {pred['bet_rationale']}")
+                print()
+        else:
+            print(f"❌ No contrarian opportunities found")
+            print(f"   Analyzed {len(power4_games)} P4 games")
+            print(f"   Try lowering --min-edge (current: {min_edge:.1f}) or --min-confidence (current: {min_confidence:.1f}%)")
+        
+        return predictions
+        
+    except Exception as e:
+        print(f"❌ Error in P4 predictions: {e}")
+        return []
+
+
 def main() -> int:
     """
     Main entry point for the College Football Market Edge Platform CLI.
@@ -1006,6 +1188,19 @@ def main() -> int:
             # Run weekly analysis - if week is 0, use current week logic
             week_to_analyze = args.analyze_week if args.analyze_week != 0 else _get_current_week()
             run_weekly_analysis(week_to_analyze, args.min_edge)
+        
+        elif args.analyze_week_p4 is not None:
+            # Run P4 predictions - if week is 0, use current week logic
+            week_to_analyze = args.analyze_week_p4 if args.analyze_week_p4 != 0 else _get_current_week()
+            predictions = run_p4_predictions(week_to_analyze, args.min_edge, args.min_confidence)
+            
+            # Save predictions if any were found
+            if predictions:
+                from utils.prediction_storage import prediction_storage
+                filepath = prediction_storage.save_weekly_predictions(predictions, week_to_analyze)
+                print(f"💾 Predictions saved to: {filepath}")
+            else:
+                print("💾 No predictions to save (no edges found)")
         
         # Performance timing
         execution_time = time.time() - start_time
