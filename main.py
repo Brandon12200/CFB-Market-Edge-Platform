@@ -944,7 +944,7 @@ def _display_games_simple(games):
         print(f"{i:2d}. {matchup} | {line:15} {type_str}")
 
 
-def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float = 60.0) -> list:
+def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float = 60.0, max_spread: float = 14.0) -> list:
     """
     Run contrarian predictions for all P4 games in a specified week.
     
@@ -952,6 +952,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         week: Week number to analyze
         min_edge: Minimum edge size to include in results
         min_confidence: Minimum confidence percentage to include in results
+        max_spread: Maximum spread to analyze (skip blowouts)
         
     Returns:
         List of predictions that meet the minimum thresholds
@@ -1020,17 +1021,67 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
             return []
         
         print(f"📊 Found {len(power4_games)} P4 vs P4 games with betting lines")
+        
+        # Smart filtering: Focus on games with higher edge probability
+        # Games with massive spreads rarely have contrarian value
+        MAX_SPREAD_FOR_ANALYSIS = max_spread  # Use parameter value
+        HIGH_PRIORITY_SPREAD = 7.5           # One-score games have highest edge potential
+        MAX_GAMES_TO_ANALYZE = 5             # Limit for initial testing
+        
+        games_to_analyze = []
+        games_skipped = []
+        
+        for game in power4_games:
+            spread = game.get('spread')
+            if spread is None:
+                continue
+                
+            spread_abs = abs(spread)
+            
+            # Categorize games by edge probability
+            if spread_abs <= HIGH_PRIORITY_SPREAD:
+                # High priority: close games where edges are most likely
+                game['priority'] = 'HIGH'
+                game['spread_abs'] = spread_abs
+                games_to_analyze.append(game)
+            elif spread_abs <= MAX_SPREAD_FOR_ANALYSIS:
+                # Medium priority: still worth checking but less likely
+                game['priority'] = 'MEDIUM'
+                game['spread_abs'] = spread_abs
+                games_to_analyze.append(game)
+            else:
+                # Skip: very unlikely to find edges in blowouts
+                games_skipped.append(game)
+        
+        # Sort by spread size (closest games first)
+        games_to_analyze.sort(key=lambda x: x['spread_abs'])
+        
+        # Further limit for performance (can be removed once optimized)
+        if len(games_to_analyze) > MAX_GAMES_TO_ANALYZE:
+            print(f"⚠️  Limiting analysis to {MAX_GAMES_TO_ANALYZE} closest games for performance")
+            games_to_analyze = games_to_analyze[:MAX_GAMES_TO_ANALYZE]
+        
+        print(f"🎯 Smart filtering: Analyzing {len(games_to_analyze)} games (skipping {len(games_skipped)} blowouts)")
+        
+        if games_skipped:
+            print(f"   Skipped games with spreads > {MAX_SPREAD_FOR_ANALYSIS}:")
+            for game in games_skipped[:3]:  # Show first 3
+                print(f"     • {game['away_team']} @ {game['home_team']} ({game['spread']:+.1f})")
+            if len(games_skipped) > 3:
+                print(f"     • ... and {len(games_skipped) - 3} more")
+        
         print()
         
-        # Run predictions for each game
+        # Run predictions for filtered games
         predictions = []
         successful_predictions = 0
         
-        for i, game in enumerate(power4_games, 1):
+        for i, game in enumerate(games_to_analyze, 1):
             home_team = game['home_team']
             away_team = game['away_team']
             
-            print(f"[{i}/{len(power4_games)}] {away_team} @ {home_team}", end=" → ")
+            priority_emoji = "🔥" if game['priority'] == 'HIGH' else "📊"
+            print(f"[{i}/{len(games_to_analyze)}] {priority_emoji} {away_team} @ {home_team} ({game['spread']:+.1f})", end=" → ")
             
             try:
                 # Generate prediction
@@ -1098,7 +1149,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                 print()
         else:
             print(f"❌ No contrarian opportunities found")
-            print(f"   Analyzed {len(power4_games)} P4 games")
+            print(f"   Analyzed {len(games_to_analyze)} games (skipped {len(games_skipped)} blowouts)")
             print(f"   Try lowering --min-edge (current: {min_edge:.1f}) or --min-confidence (current: {min_confidence:.1f}%)")
         
         return predictions
