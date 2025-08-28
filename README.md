@@ -50,13 +50,13 @@ CFBD_API_KEY=your_cfbd_api_key
 ### Single Game Analysis
 ```bash
 # Basic analysis
-python main.py --home "Ohio State" --away "Michigan"
+python main.py --home "Ohio State" --away "Michigan" --week 12
 
 # With detailed factor breakdown
-python main.py --home "Alabama" --away "Auburn" --show-factors
+python main.py --home "Alabama" --away "Auburn" --week 13 --show-factors
 
 # Verbose output with debugging info
-python main.py --home "Texas" --away "Oklahoma" --verbose
+python main.py --home "Texas" --away "Oklahoma" --week 6 --verbose
 ```
 
 ### Weekly Analysis
@@ -140,6 +140,7 @@ Each factor calculation includes a confidence assessment that adjusts its impact
 ### Standard Analysis
 ```
 Analyzing: MICHIGAN @ OHIO STATE
+Week: 12
 --------------------------------------------------
 Fetching game data...
 Data Quality: 85.0%
@@ -312,7 +313,7 @@ python scripts/validate_factors.py --output html --save report.html
 ### Debug Mode
 ```bash
 # Enable detailed logging
-python main.py --home "Team1" --away "Team2" --debug
+python main.py --home "Team1" --away "Team2" --week 8 --debug
 
 # Check system health
 python main.py --check-config --verbose

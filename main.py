@@ -139,6 +139,13 @@ Examples:
         metavar='PERCENT',
         help='Minimum confidence percentage to display (default: 60.0%)'
     )
+    batch_group.add_argument(
+        '--delay',
+        type=float,
+        default=3.0,
+        metavar='MINUTES',
+        help='Minutes to wait between analyzing games (default: 3.0 minutes)'
+    )
     
     # Output control
     output_group = parser.add_argument_group('Output Options')
@@ -944,7 +951,7 @@ def _display_games_simple(games):
         print(f"{i:2d}. {matchup} | {line:15} {type_str}")
 
 
-def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float = 60.0, max_spread: float = 14.0) -> list:
+def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float = 60.0, max_spread: float = 14.0, delay_minutes: float = 3.0) -> list:
     """
     Run contrarian predictions for all P4 games in a specified week.
     
@@ -953,6 +960,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         min_edge: Minimum edge size to include in results
         min_confidence: Minimum confidence percentage to include in results
         max_spread: Maximum spread to analyze (skip blowouts)
+        delay_minutes: Minutes to wait between analyzing games (prevents rate limiting)
         
     Returns:
         List of predictions that meet the minimum thresholds
@@ -1026,7 +1034,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         # Games with massive spreads rarely have contrarian value
         MAX_SPREAD_FOR_ANALYSIS = max_spread  # Use parameter value
         HIGH_PRIORITY_SPREAD = 7.5           # One-score games have highest edge potential
-        MAX_GAMES_TO_ANALYZE = 5             # Limit for initial testing
+        MAX_GAMES_TO_ANALYZE = 20            # Increased limit since we have delays now
         
         games_to_analyze = []
         games_skipped = []
@@ -1056,12 +1064,21 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         # Sort by spread size (closest games first)
         games_to_analyze.sort(key=lambda x: x['spread_abs'])
         
-        # Further limit for performance (can be removed once optimized)
+        # Limit games if needed
         if len(games_to_analyze) > MAX_GAMES_TO_ANALYZE:
-            print(f"⚠️  Limiting analysis to {MAX_GAMES_TO_ANALYZE} closest games for performance")
+            print(f"⚠️  Limiting analysis to {MAX_GAMES_TO_ANALYZE} closest games")
             games_to_analyze = games_to_analyze[:MAX_GAMES_TO_ANALYZE]
         
         print(f"🎯 Smart filtering: Analyzing {len(games_to_analyze)} games (skipping {len(games_skipped)} blowouts)")
+        
+        # Calculate estimated runtime
+        from datetime import datetime, timedelta
+        import time
+        total_minutes = len(games_to_analyze) * delay_minutes
+        estimated_completion = datetime.now() + timedelta(minutes=total_minutes)
+        
+        print(f"⏱️  Estimated runtime: {total_minutes:.1f} minutes ({delay_minutes} min delay between games)")
+        print(f"   Expected completion: {estimated_completion.strftime('%I:%M %p')}")
         
         if games_skipped:
             print(f"   Skipped games with spreads > {MAX_SPREAD_FOR_ANALYSIS}:")
@@ -1089,7 +1106,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                 
                 # Extract metrics
                 edge_size = result.get('edge_size', 0)
-                confidence = result.get('confidence', 0)
+                confidence = result.get('confidence_score', 0) * 100
                 
                 print(f"Edge: {edge_size:.1f}, Conf: {confidence:.0f}%", end="")
                 
@@ -1123,9 +1140,11 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                 else:
                     print(f" ❌")
                 
-                # Short delay to prevent overwhelming APIs
-                import time
-                time.sleep(0.5)
+                # Delay between games to prevent rate limiting
+                if i < len(games_to_analyze) and delay_minutes > 0:
+                    next_game_time = datetime.now() + timedelta(minutes=delay_minutes)
+                    print(f"   ⏳ Waiting {delay_minutes} minutes before next game... (resumes at {next_game_time.strftime('%I:%M %p')})")
+                    time.sleep(delay_minutes * 60)  # Convert to seconds
                 
             except Exception as e:
                 print(f" 🚨 ERROR")
@@ -1243,7 +1262,8 @@ def main() -> int:
         elif args.analyze_week_p4 is not None:
             # Run P4 predictions - if week is 0, use current week logic
             week_to_analyze = args.analyze_week_p4 if args.analyze_week_p4 != 0 else _get_current_week()
-            predictions = run_p4_predictions(week_to_analyze, args.min_edge, args.min_confidence)
+            predictions = run_p4_predictions(week_to_analyze, args.min_edge, args.min_confidence, 
+                                           max_spread=14.0, delay_minutes=args.delay)
             
             # Save predictions if any were found
             if predictions:

@@ -123,7 +123,7 @@ def analyze_games(games: list, min_edge: float = 1.0, min_confidence: float = 60
             
             # Extract key metrics
             edge_size = result.get('edge_size', 0)
-            confidence = result.get('confidence', 0)
+            confidence = result.get('confidence_score', 0) * 100
             
             print(f"    Edge: {edge_size:.1f} points, Confidence: {confidence:.1f}%")
             
