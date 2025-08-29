@@ -799,7 +799,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
         min_edge: Minimum edge size to display
     """
     _ensure_imports()
-    print(f"\nWeek {week} Power 4 Conference Games")
+    print(f"\nWeek {week} Power 4 vs Power 4 Games")
     print("=" * 60)
     
     try:
@@ -853,8 +853,8 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             if normalizer.is_fcs_team(home) or normalizer.is_fcs_team(away):
                 continue
             
-            # Check if at least one team is Power 4 (includes independents like Notre Dame)
-            if home in all_power4_teams or away in all_power4_teams:
+            # Check if BOTH teams are Power 4 (includes independents like Notre Dame)
+            if home in all_power4_teams and away in all_power4_teams:
                 # Determine conference matchup type
                 home_conf = None
                 away_conf = None
@@ -877,8 +877,9 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                 power4_games.append(game)
         
         if not power4_games:
-            print("📭 No Power 4 games found for this week")
-            print("   This might be an off-week or the season hasn't started yet")
+            print("📭 No Power 4 vs Power 4 games found for this week")
+            print("   Only games where BOTH teams are from Power 4 conferences are shown")
+            print("   This might be early season (mostly non-conference games) or an off-week")
             return
         
         # Sort games by conference matchup type, then by spread size
@@ -898,9 +899,9 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
         non_conf_games = [g for g in power4_games if g['matchup_type'] == 'Non-Conference']
         games_with_lines = [g for g in power4_games if g['spread'] is not None]
         
-        print(f"📊 Summary: {len(power4_games)} Power 4 games this week")
+        print(f"📊 Summary: {len(power4_games)} Power 4 vs Power 4 games this week")
         print(f"   • {len(conf_games)} conference games")  
-        print(f"   • {len(non_conf_games)} non-conference games")
+        print(f"   • {len(non_conf_games)} non-conference Power 4 matchups")
         
         if games_with_lines:
             print(f"\n💡 Analyze individual games:")
@@ -916,7 +917,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
 
 def _display_games_simple(games):
     """Display games in a simple, terminal-friendly format."""
-    print("\n🏈 Power 4 Conference Games:")
+    print("\n🏈 Power 4 vs Power 4 Games:")
     print("-" * 80)
     
     for i, game in enumerate(games, 1):
@@ -928,10 +929,12 @@ def _display_games_simple(games):
         
         # Format spread
         if game['spread'] is not None:
-            if game['spread'] > 0:
-                line = f"{home_team[:10]} -{game['spread']:.1f}"
-            elif game['spread'] < 0:
-                line = f"{away_team[:10]} -{abs(game['spread']):.1f}"
+            if game['spread'] < 0:
+                # Negative spread = home team favored
+                line = f"{home_team[:10]} {game['spread']:.1f}"
+            elif game['spread'] > 0:
+                # Positive spread = away team favored  
+                line = f"{away_team[:10]} -{game['spread']:.1f}"
             else:
                 line = "Pick'em"
         else:
