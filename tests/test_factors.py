@@ -11,17 +11,14 @@ from factors.base_calculator import BaseFactorCalculator
 from factors.coaching_edge import (
     ExperienceDifferentialCalculator,
     PressureSituationCalculator,
-    VenuePerformanceCalculator,
     HeadToHeadRecordCalculator
 )
 from factors.situational_context import (
     DesperationIndexCalculator,
     RevengeGameCalculator,
-    LookaheadSandwichCalculator,
-    StatementOpportunityCalculator
+    LookaheadSandwichCalculator
 )
 from factors.momentum_factors import (
-    ATSRecentFormCalculator,
     PointDifferentialTrendsCalculator,
     CloseGamePerformanceCalculator
 )
