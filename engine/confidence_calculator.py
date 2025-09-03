@@ -89,8 +89,16 @@ class ConfidenceCalculator:
             for component, score in confidence_components.items()
         )
         
-        # Ensure confidence is within reasonable bounds (15% to 95%)
-        final_confidence = max(0.15, min(0.95, total_confidence))
+        # Apply early season volatility dampener (Weeks 1-3)
+        week = context.get('week', 4)
+        if week <= 3:
+            # Reduce confidence by 10-15% for early season games
+            early_season_multiplier = 0.85 if week == 1 else (0.87 if week == 2 else 0.90)
+            total_confidence *= early_season_multiplier
+            self.logger.debug(f"Applied early season dampener for Week {week}: {early_season_multiplier}")
+        
+        # Ensure confidence is within reasonable bounds (15% to 85% max for better calibration)
+        final_confidence = max(0.15, min(0.85, total_confidence))
         
         # Determine confidence level
         confidence_level = self._determine_confidence_level(final_confidence)
@@ -181,7 +189,7 @@ class ConfidenceCalculator:
         return min(consensus_score, 1.0)
     
     def _assess_edge_significance(self, prediction_result: Dict[str, Any]) -> float:
-        """Assess the significance of the identified edge."""
+        """Assess the significance of the identified edge with recalibrated scoring."""
         edge_size = prediction_result.get('edge_size', 0.0)
         prediction_type = prediction_result.get('prediction_type', 'CONSENSUS_ALIGNMENT')
         
@@ -189,25 +197,30 @@ class ConfidenceCalculator:
         if edge_size is None:
             edge_size = 0.0
         
-        # Base significance from edge size
-        if edge_size >= 3.0:
-            base_significance = 1.0  # Strong edge
-        elif edge_size >= 2.0:
-            base_significance = 0.8  # Good edge
+        # Recalibrated edge significance based on Week 1 performance
+        # More conservative scoring to avoid overconfidence
+        if edge_size >= 6.0:
+            base_significance = 0.9  # Massive edge (rare)
+        elif edge_size >= 4.0:
+            base_significance = 0.75  # Strong edge
+        elif edge_size >= 2.5:
+            base_significance = 0.65  # Solid edge
+        elif edge_size >= 1.5:
+            base_significance = 0.55  # Moderate edge
         elif edge_size >= 1.0:
-            base_significance = 0.6  # Moderate edge
+            base_significance = 0.45  # Slight edge
         elif edge_size >= 0.5:
-            base_significance = 0.4  # Slight edge
+            base_significance = 0.35  # Minimal edge
         else:
-            base_significance = 0.2  # No meaningful edge
+            base_significance = 0.25  # No meaningful edge
         
-        # Adjust based on prediction type
+        # Adjust based on prediction type (reduced multipliers)
         type_adjustments = {
-            'STRONG_CONTRARIAN': 1.0,
-            'MODERATE_CONTRARIAN': 0.8,
+            'STRONG_CONTRARIAN': 0.9,
+            'MODERATE_CONTRARIAN': 0.75,
             'SLIGHT_CONTRARIAN': 0.6,
-            'CONSENSUS_ALIGNMENT': 0.3,
-            'NO_BETTING_DATA': 0.2,
+            'CONSENSUS_ALIGNMENT': 0.5,  # Increased from 0.3
+            'NO_BETTING_DATA': 0.3,
             'ERROR': 0.0
         }
         
