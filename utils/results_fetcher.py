@@ -9,17 +9,17 @@ import time
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
-from data.espn_client import espn_client
-from data.cfbd_client import cfbd_client
-from utils.normalizer import team_name_normalizer
+from data.espn_client import ESPNStatsClient
+from data.cfbd_client import CFBDataClient
+from utils.normalizer import normalizer as team_name_normalizer
 
 
 class ResultsFetcher:
     """Fetches completed game results from multiple data sources."""
     
     def __init__(self):
-        self.espn_client = espn_client
-        self.cfbd_client = cfbd_client
+        self.espn_client = ESPNStatsClient()
+        self.cfbd_client = CFBDataClient()
     
     def fetch_game_results(self, week: int, season: int = 2025) -> List[Dict]:
         """
@@ -168,15 +168,11 @@ class ResultsFetcher:
         results = []
         
         try:
-            # Use existing CFBD client
-            games_data = self.cfbd_client._make_request(
-                'games',
-                params={
-                    'year': season,
-                    'week': week,
-                    'seasonType': 'regular',
-                    'division': 'fbs'
-                }
+            # Use existing CFBD client's get_games method
+            games_data = self.cfbd_client.get_games(
+                year=season,
+                week=week,
+                season_type='regular'
             )
             
             for game in games_data:
