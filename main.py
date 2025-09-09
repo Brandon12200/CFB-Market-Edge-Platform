@@ -805,22 +805,54 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
     try:
         # Get all games from multiple sources
         all_games = []
+        games_with_lines = {}
         
         # Try to get games with betting lines first
         if data_manager.odds_client:
-            weekly_data = data_manager.odds_client.get_weekly_spreads(week)
-            betting_games = weekly_data.get('games', [])
-            
-            for game in betting_games:
-                all_games.append({
-                    'home_team': game.get('home_team'),
-                    'away_team': game.get('away_team'),
-                    'spread': game.get('consensus_spread'),
-                    'has_line': True
-                })
+            try:
+                weekly_data = data_manager.odds_client.get_weekly_spreads(week)
+                betting_games = weekly_data.get('games', [])
+                
+                for game in betting_games:
+                    home = game.get('home_team')
+                    away = game.get('away_team')
+                    if home and away:
+                        key = f"{away.upper()}@{home.upper()}"
+                        games_with_lines[key] = game.get('consensus_spread')
+                        all_games.append({
+                            'home_team': home,
+                            'away_team': away,
+                            'spread': game.get('consensus_spread'),
+                            'has_line': True
+                        })
+            except Exception as e:
+                print(f"⚠️  Could not fetch odds data: {e}")
         
-        # Note: Additional game sources could be added here in the future
-        # (ESPN Schedule API, etc.) but only with real API data
+        # Also get games from schedule API to ensure we have all P4 games
+        try:
+            from data.schedule_client import CFBScheduleClient
+            from datetime import datetime
+            schedule_client = CFBScheduleClient()
+            # Use current year (2025 for September 2025)
+            current_year = datetime.now().year
+            schedule_games = schedule_client.get_p4_games(week, current_year)
+            
+            # Add schedule games that aren't already in our list
+            for game in schedule_games:
+                home = game.get('home_team')
+                away = game.get('away_team')
+                if home and away:
+                    key = f"{away.upper()}@{home.upper()}"
+                    # Only add if not already included from odds API
+                    if key not in games_with_lines:
+                        all_games.append({
+                            'home_team': home,
+                            'away_team': away,
+                            'spread': None,
+                            'has_line': False
+                        })
+        except Exception as e:
+            print(f"⚠️  Could not fetch schedule data: {e}")
         
         # Power 4 conference teams (accurate as of 2024 season)
         power4_teams = {
@@ -848,6 +880,10 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
         for game in all_games:
             home = game.get('home_team', '').upper()
             away = game.get('away_team', '').upper()
+            
+            # Skip invalid games where team plays itself (data error)
+            if home == away:
+                continue
             
             # Filter out FCS teams first
             if normalizer.is_fcs_team(home) or normalizer.is_fcs_team(away):

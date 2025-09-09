@@ -120,11 +120,11 @@ class TeamNameNormalizer:
         clean = re.sub(r'\s+', ' ', name.strip().upper())
         
         # Remove common prefixes/suffixes that don't help identification
+        # Note: Don't remove 'COLLEGE' as it's part of 'BOSTON COLLEGE'
         patterns_to_remove = [
             r'\bUNIVERSITY OF\b',
             r'\bFOOTBALL\b',
             r'\bUNIVERSITY\b',
-            r'\bCOLLEGE\b',
             r'\bSTATE UNIVERSITY\b',
         ]
         
@@ -526,6 +526,7 @@ class TeamNameNormalizer:
             
             # ACC
             'BOSTON COLLEGE EAGLES': 'BOSTON COLLEGE',
+            'BOSTON COLLEGE': 'BOSTON COLLEGE',  # Direct mapping for base name
             'CLEMSON TIGERS': 'CLEMSON',
             'DUKE BLUE DEVILS': 'DUKE',
             'FLORIDA STATE SEMINOLES': 'FLORIDA STATE',
@@ -637,6 +638,11 @@ class TeamNameNormalizer:
         }
         
         aliases.update(state_mappings)
+        
+        # Add identity mappings for all team names
+        for team in self.team_mappings.keys():
+            if team not in aliases:
+                aliases[team] = team
         
         return aliases
     

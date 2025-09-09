@@ -32,8 +32,13 @@ class CFBScheduleClient:
         """Initialize CFB Schedule API client."""
         self.base_url = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
         
-        # Use ESPN rate limiter
+        # Use ESPN rate limiter - initialize if not exists
         self.rate_limiter = rate_limiter_manager.get_limiter('espn_api')
+        if not self.rate_limiter:
+            # Create a simple rate limiter if none exists
+            from utils.rate_limiter import setup_api_rate_limiters
+            setup_api_rate_limiters(odds_limit=10, espn_limit=20)
+            self.rate_limiter = rate_limiter_manager.get_limiter('espn_api')
         
         # Cache manager
         self.cache = cache_manager

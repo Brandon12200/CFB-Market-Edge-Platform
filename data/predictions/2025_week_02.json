@@ -2,7 +2,7 @@
   "week": 2,
   "season": 2025,
   "generated_date": "2025-09-03T00:00:00.000Z",
-  "prediction_count": 11,
+  "prediction_count": 12,
   "predictions": [
     {
       "game_id": "VIRGINIA_NC_STATE_week2",
@@ -17,7 +17,7 @@
       "recommendation": "LEAN - NC STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -144,7 +144,7 @@
       "away_team": "OKLAHOMA STATE",
       "vegas_spread": -28.5,
       "contrarian_spread": -27.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 66.5,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
@@ -163,13 +163,13 @@
       "away_team": "KANSAS",
       "vegas_spread": -6.5,
       "contrarian_spread": -5.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.4,
       "recommendation": "LEAN - MISSOURI (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -212,13 +212,32 @@
       "data_quality": 100.0,
       "variance_analysis": {},
       "timestamp": "2025-09-03T00:00:00.000Z"
+    },
+    {
+      "game_id": "BOSTON_COLLEGE_MICHIGAN_STATE_week2",
+      "week": 2,
+      "home_team": "MICHIGAN STATE",
+      "away_team": "BOSTON COLLEGE",
+      "vegas_spread": -3.5,
+      "contrarian_spread": -2.4,
+      "predicted_edge": 1.07,
+      "edge_direction": "away",
+      "confidence": 66.7,
+      "recommendation": "LEAN - MICHIGAN STATE (home) - 1.1 point slight edge",
+      "prediction_type": "SLIGHT_CONTRARIAN",
+      "factor_breakdown": {
+        "situational_context": 1.06
+      },
+      "data_quality": 100.0,
+      "variance_analysis": {},
+      "timestamp": "2025-09-06T16:27:17.560182Z"
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 11,
-    "games_with_edges": 7,
-    "hit_rate": 0.636,
+    "total_games_analyzed": 12,
+    "games_with_edges": 8,
+    "hit_rate": 0.667,
     "average_confidence": 67.5,
-    "average_edge_size": 1.02
+    "average_edge_size": 1.03
   }
 }
