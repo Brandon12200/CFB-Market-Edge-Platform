@@ -298,7 +298,12 @@ python scripts/validate_factors.py --quick
 
 # Generate HTML report
 python scripts/validate_factors.py --output html --save report.html
+
+# Validate performance metrics
+python validate_performance_metrics.py
 ```
+
+The `validate_performance_metrics.py` script provides real-time validation of system performance claims including factor coverage, cache efficiency, and analysis latency.
 
 ## Performance Characteristics
 
