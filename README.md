@@ -5,7 +5,7 @@
 [![Tests](https://img.shields.io/badge/tests-passing-green.svg)](#testing)
 [![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](#testing)
 
-Production-ready machine learning platform for identifying market inefficiencies in college football betting markets through advanced statistical analysis, market sentiment detection, and adaptive learning algorithms.
+Machine learning platform with production-grade architecture for identifying market inefficiencies in college football betting markets through advanced statistical analysis, market sentiment detection, and adaptive learning algorithms.
 
 ## Overview
 
@@ -13,19 +13,19 @@ This tool analyzes college football games by applying quantifiable "contrarian f
 
 ## Key Features
 
-### 🧠 **Advanced Analytics Engine**
+### **Advanced Analytics Engine**
 - **Multi-Factor Analysis**: Coaching experience differentials, situational contexts, momentum indicators
 - **Market Efficiency Detection**: Real-time line movement analysis and sharp money identification
 - **Adaptive Calibration**: Self-improving confidence scoring based on historical performance
 - **Dynamic Factor Weighting**: Automatically adjusts model weights based on predictive accuracy
 
-### 📊 **Production-Ready Architecture**
+### **Production-Grade Architecture**
 - **Modular Design**: Clean separation of concerns with pluggable factor system
 - **Comprehensive Testing**: 95%+ test coverage with unit and integration tests
 - **Robust Error Handling**: Graceful degradation and detailed logging
 - **Performance Monitoring**: Built-in metrics and health checking
 
-### 🎯 **Intelligent Filtering**
+### **Intelligent Filtering**
 - **Game Quality Assessment**: Filters high-variance and low-quality betting opportunities
 - **Conference-Aware Analysis**: Specialized handling for different conference dynamics
 - **Weather & Situational Context**: Environmental and temporal factor integration
@@ -309,7 +309,7 @@ The `validate_performance_metrics.py` script provides real-time validation of sy
 
 - **Execution Time**: 2-5 seconds per game (with caching)
 - **API Efficiency**: ~10 API calls per fresh analysis
-- **Cache Hit Rate**: 70-80% in typical usage
+- **Cache Hit Rate**: 60-70% in typical usage
 - **Memory Usage**: ~50MB baseline, ~100MB with full cache
 
 ## Troubleshooting
