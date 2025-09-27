@@ -16,8 +16,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": true,
       "confidence": 68.8,
-      "prediction_type": "SLIGHT_CONTRARIAN",
-      "notes": "Source: ESPN"
+      "prediction_type": "SLIGHT_CONTRARIAN"
     },
     {
       "game_id": "LSU_CLEMSON_week1",
@@ -32,8 +31,7 @@
       "home_covered_contrarian": false,
       "prediction_correct": true,
       "confidence": 68.4,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "NOTRE_DAME_MIAMI_week1",
@@ -48,8 +46,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": true,
       "confidence": 65.9,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "NEBRASKA_CINCINNATI_week1",
@@ -64,8 +61,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": true,
       "confidence": 68.5,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "GEORGIA_TECH_COLORADO_week1",
@@ -80,8 +76,7 @@
       "home_covered_contrarian": false,
       "prediction_correct": false,
       "confidence": 67.7,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "AUBURN_BAYLOR_week1",
@@ -96,8 +91,7 @@
       "home_covered_contrarian": false,
       "prediction_correct": false,
       "confidence": 67.4,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "MISSISSIPPI_STATE_USC_week1",
@@ -112,8 +106,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": false,
       "confidence": 70.8,
-      "prediction_type": "SLIGHT_CONTRARIAN",
-      "notes": "Source: ESPN"
+      "prediction_type": "SLIGHT_CONTRARIAN"
     },
     {
       "game_id": "UTAH_UCLA_week1",
@@ -128,8 +121,7 @@
       "home_covered_contrarian": false,
       "prediction_correct": false,
       "confidence": 67.2,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "TEXAS_OHIO_STATE_week1",
@@ -144,8 +136,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": false,
       "confidence": 68.5,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "SYRACUSE_TENNESSEE_week1",
@@ -160,8 +151,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": false,
       "confidence": 66.6,
-      "prediction_type": "CONSENSUS_ALIGNMENT",
-      "notes": "Source: ESPN"
+      "prediction_type": "CONSENSUS_ALIGNMENT"
     },
     {
       "game_id": "VIRGINIA_TECH_SOUTH_CAROLINA_week1",
@@ -176,8 +166,7 @@
       "home_covered_contrarian": true,
       "prediction_correct": false,
       "confidence": 68.6,
-      "prediction_type": "SLIGHT_CONTRARIAN",
-      "notes": "Source: ESPN"
+      "prediction_type": "SLIGHT_CONTRARIAN"
     }
   ],
   "summary": {
