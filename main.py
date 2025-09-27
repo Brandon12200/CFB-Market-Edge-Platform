@@ -836,21 +836,28 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             # Use current year (2025 for September 2025)
             current_year = datetime.now().year
             schedule_games = schedule_client.get_p4_games(week, current_year)
-            
+
             # Add schedule games that aren't already in our list
             for game in schedule_games:
                 home = game.get('home_team')
                 away = game.get('away_team')
                 if home and away:
-                    key = f"{away.upper()}@{home.upper()}"
-                    # Only add if not already included from odds API
-                    if key not in games_with_lines:
-                        all_games.append({
-                            'home_team': home,
-                            'away_team': away,
-                            'spread': None,
-                            'has_line': False
-                        })
+                    # Normalize names for deduplication check
+                    home_norm = normalizer.normalize(home)
+                    away_norm = normalizer.normalize(away)
+
+                    if home_norm and away_norm:
+                        home_norm_upper = home_norm.upper()
+                        away_norm_upper = away_norm.upper()
+                        key = f"{away_norm_upper}@{home_norm_upper}"
+                        # Only add if not already included from odds API
+                        if key not in games_with_lines:
+                            all_games.append({
+                                'home_team': home,
+                                'away_team': away,
+                                'spread': None,
+                                'has_line': False
+                            })
         except Exception as e:
             print(f"⚠️  Could not fetch schedule data: {e}")
         
@@ -878,19 +885,35 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             all_power4_teams.update(conf_teams)
         
         for game in all_games:
-            home = game.get('home_team', '').upper()
-            away = game.get('away_team', '').upper()
-            
+            # Normalize team names to remove mascots and get consistent format
+            home_raw = game.get('home_team', '')
+            away_raw = game.get('away_team', '')
+
+            # Use normalizer to get clean team names
+            home_normalized = normalizer.normalize(home_raw)
+            away_normalized = normalizer.normalize(away_raw)
+
+            # Skip if normalization failed
+            if not home_normalized or not away_normalized:
+                continue
+
+            home = home_normalized.upper() if isinstance(home_normalized, str) else home_normalized
+            away = away_normalized.upper() if isinstance(away_normalized, str) else away_normalized
+
             # Skip invalid games where team plays itself (data error)
             if home == away:
                 continue
-            
+
             # Filter out FCS teams first
             if normalizer.is_fcs_team(home) or normalizer.is_fcs_team(away):
                 continue
-            
+
             # Check if BOTH teams are Power 4 (includes independents like Notre Dame)
             if home in all_power4_teams and away in all_power4_teams:
+                # Update game with normalized team names for consistent display
+                game['home_team'] = normalizer.normalize(home_raw)
+                game['away_team'] = normalizer.normalize(away_raw)
+
                 # Determine conference matchup type
                 home_conf = None
                 away_conf = None
@@ -899,16 +922,16 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                         home_conf = conf
                     if away in teams:
                         away_conf = conf
-                
+
                 game['home_conf'] = home_conf
                 game['away_conf'] = away_conf
-                
+
                 # Conference game only if both teams are in the same actual conference
                 # (Independent teams can never play "conference" games)
-                is_conference_game = (home_conf == away_conf and 
-                                    home_conf is not None and 
+                is_conference_game = (home_conf == away_conf and
+                                    home_conf is not None and
                                     home_conf != 'INDEPENDENT')
-                
+
                 game['matchup_type'] = 'Conference' if is_conference_game else 'Non-Conference'
                 power4_games.append(game)
         
