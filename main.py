@@ -873,7 +873,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                       'IOWA STATE', 'KANSAS', 'KANSAS STATE', 'OKLAHOMA STATE', 'TCU', 'TEXAS TECH',
                       'UCF', 'UTAH', 'WEST VIRGINIA', 'BYU'],
             'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH', 'LOUISVILLE',
-                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITT', 'SYRACUSE',
+                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITTSBURGH', 'SYRACUSE',
                    'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'CALIFORNIA', 'STANFORD', 'SMU'],
             'INDEPENDENT': ['NOTRE DAME']  # Football independents that we track
         }
@@ -1063,7 +1063,7 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                       'IOWA STATE', 'KANSAS', 'KANSAS STATE', 'OKLAHOMA STATE', 'TCU', 'TEXAS TECH',
                       'UCF', 'UTAH', 'WEST VIRGINIA', 'BYU'],
             'ACC': ['BOSTON COLLEGE', 'CLEMSON', 'DUKE', 'FLORIDA STATE', 'GEORGIA TECH', 'LOUISVILLE',
-                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITT', 'SYRACUSE',
+                   'MIAMI', 'NC STATE', 'NORTH CAROLINA', 'PITTSBURGH', 'SYRACUSE',
                    'VIRGINIA', 'VIRGINIA TECH', 'WAKE FOREST', 'CALIFORNIA', 'STANFORD', 'SMU'],
             'INDEPENDENT': ['NOTRE DAME']
         }

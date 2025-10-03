@@ -31,7 +31,7 @@ class CFBScheduleClient:
     def __init__(self):
         """Initialize CFB Schedule API client."""
         self.base_url = "https://site.api.espn.com/apis/site/v2/sports/football/college-football"
-        
+
         # Use ESPN rate limiter - initialize if not exists
         self.rate_limiter = rate_limiter_manager.get_limiter('espn_api')
         if not self.rate_limiter:
@@ -39,34 +39,44 @@ class CFBScheduleClient:
             from utils.rate_limiter import setup_api_rate_limiters
             setup_api_rate_limiters(odds_limit=10, espn_limit=20)
             self.rate_limiter = rate_limiter_manager.get_limiter('espn_api')
-        
+
         # Cache manager
         self.cache = cache_manager
-        
+
+        # Initialize CFBD client for more complete schedule data
+        try:
+            from data.cfbd_client import CFBDataClient
+            self.cfbd_client = CFBDataClient()
+            self.logger = logging.getLogger(__name__)
+            self.logger.info("CFBD client initialized for schedule data")
+        except Exception as e:
+            self.logger = logging.getLogger(__name__)
+            self.logger.warning(f"CFBD client not available: {e}")
+            self.cfbd_client = None
+
         # Session for connection pooling
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'CFB-Contrarian-Predictor/2.0',
             'Accept': 'application/json'
         })
-        
+
         # P4 Conference definitions
         self.p4_conferences = {
             'SEC', 'BIG TEN', 'BIG 12', 'ACC', 'PAC-12', 'PACIFIC-12'
         }
-        
+
         # Logging
-        self.logger = logging.getLogger(__name__)
         self.logger.info("CFB Schedule API client initialized")
     
     def get_week_schedule(self, week: int, year: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Get all games for a specific week.
-        
+
         Args:
             week: Week number (1-17 for regular season)
             year: Season year (default: most recent completed season)
-            
+
         Returns:
             List of games with team names, times, venues
         """
@@ -74,23 +84,40 @@ class CFBScheduleClient:
             # During offseason (July), use previous year's completed season
             current_year = datetime.now().year
             current_month = datetime.now().month
-            
+
             if current_month < 8:  # Before August, use previous year
                 year = current_year - 1
             else:
                 year = current_year
-        
+
         # Check cache first
         cache_key = f"week_schedule_{year}_{week}"
         cached_data = self.cache.get_team_data('_schedule', cache_key)
         if cached_data:
             self.logger.debug(f"Using cached schedule for Week {week} {year}")
             return cached_data
-        
+
+        # Try CFBD first for more complete schedule data
+        if self.cfbd_client:
+            try:
+                cfbd_games = self.cfbd_client.get_games(year=year, week=week)
+                if cfbd_games:
+                    self.logger.info(f"CFBD API returned {len(cfbd_games)} games for Week {week} {year}")
+                    games = self._process_cfbd_schedule(cfbd_games, week, year)
+
+                    # Cache the result
+                    self.cache.cache_team_data('_schedule', games, cache_key, ttl=3600)  # 1 hour cache
+
+                    self.logger.info(f"Processed {len(games)} games from CFBD for Week {week} {year}")
+                    return games
+            except Exception as e:
+                self.logger.warning(f"CFBD schedule fetch failed, falling back to ESPN: {e}")
+
+        # Fallback to ESPN API
         try:
             # Rate limiting
             self.rate_limiter.wait_if_needed()
-            
+
             # Fetch week schedule from ESPN
             url = f"{self.base_url}/scoreboard"
             params = {
@@ -98,35 +125,35 @@ class CFBScheduleClient:
                 'seasontype': 2,  # Regular season
                 'week': week
             }
-            
+
             response = self.session.get(url, params=params, timeout=30)
-            
+
             if response.status_code != 200:
                 self.logger.warning(f"ESPN API returned {response.status_code} for week {week} schedule")
                 # Try without week parameter for current/recent data
                 self.logger.info(f"Attempting fallback request without week parameter")
                 response = self.session.get(f"{self.base_url}/scoreboard", timeout=30)
-                
+
                 if response.status_code != 200:
                     self.logger.error(f"ESPN API fallback also failed: {response.status_code}")
                     return []
-            
+
             data = response.json()
-            
+
             # Debug: Log the structure we get back
             self.logger.debug(f"ESPN API response structure: {list(data.keys())}")
             events = data.get('events', [])
             self.logger.info(f"ESPN API returned {len(events)} events for Week {week} {year}")
-            
+
             # Process schedule data
             games = self._process_week_schedule(data, week, year)
-            
+
             # Cache the result
             self.cache.cache_team_data('_schedule', games, cache_key, ttl=3600)  # 1 hour cache
-            
+
             self.logger.info(f"Retrieved {len(games)} total games, processed {len(games)} for Week {week} {year}")
             return games
-            
+
         except Exception as e:
             self.logger.error(f"Error fetching schedule for Week {week}: {e}")
             return []
@@ -181,11 +208,77 @@ class CFBScheduleClient:
         
         return matchups
     
+    def _process_cfbd_schedule(self, cfbd_games: List[Dict], week: int, year: int) -> List[Dict[str, Any]]:
+        """Process CFBD API games response into standardized game list."""
+        games = []
+
+        for game in cfbd_games:
+            try:
+                game_info = self._extract_game_from_cfbd(game, week, year)
+                if game_info:
+                    games.append(game_info)
+            except Exception as e:
+                self.logger.warning(f"Error processing CFBD game: {e}")
+                continue
+
+        return games
+
+    def _extract_game_from_cfbd(self, game: Dict, week: int, year: int) -> Optional[Dict[str, Any]]:
+        """Extract game information from CFBD API response."""
+        home_team = game.get('homeTeam', '')
+        away_team = game.get('awayTeam', '')
+
+        if not home_team or not away_team:
+            return None
+
+        # Get conference info
+        home_conf = game.get('homeConference', '').upper()
+        away_conf = game.get('awayConference', '').upper()
+
+        return {
+            'week': week,
+            'year': year,
+            'game_id': str(game.get('id', '')),
+            'date': game.get('startDate', ''),
+            'name': f"{away_team} at {home_team}",
+            'short_name': f"{away_team} @ {home_team}",
+
+            # Home team info
+            'home_team': home_team,
+            'home_team_short': home_team,
+            'home_team_abbrev': home_team[:4].upper(),
+            'home_team_normalized': normalizer.normalize(home_team),
+            'home_conference': home_conf,
+            'home_ranking': None,  # CFBD doesn't provide rankings in games endpoint
+            'home_record': '',
+
+            # Away team info
+            'away_team': away_team,
+            'away_team_short': away_team,
+            'away_team_abbrev': away_team[:4].upper(),
+            'away_team_normalized': normalizer.normalize(away_team),
+            'away_conference': away_conf,
+            'away_ranking': None,
+            'away_record': '',
+
+            # Game details
+            'venue_name': game.get('venue', ''),
+            'venue_city': '',
+            'venue_state': '',
+            'neutral_site': game.get('neutralSite', False),
+            'conference_game': game.get('conferenceGame', False),
+
+            # Status
+            'status': 'scheduled',
+            'completed': game.get('completed', False),
+            'started': game.get('completed', False)
+        }
+
     def _process_week_schedule(self, data: Dict, week: int, year: int) -> List[Dict[str, Any]]:
         """Process raw ESPN scoreboard response into game list."""
         events = data.get('events', [])
         games = []
-        
+
         for event in events:
             try:
                 game_info = self._extract_game_from_event(event, week, year)
@@ -194,7 +287,7 @@ class CFBScheduleClient:
             except Exception as e:
                 self.logger.warning(f"Error processing game event: {e}")
                 continue
-        
+
         return games
     
     def _extract_game_from_event(self, event: Dict, week: int, year: int) -> Optional[Dict[str, Any]]:
