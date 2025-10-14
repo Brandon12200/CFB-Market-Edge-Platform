@@ -107,3 +107,10 @@ implementation_plan.md
 # Virtual Environment
 venv/
 htmlcov/
+
+# Learning folder
+learning/
+
+# Markdown files except README
+*.md
+!README.md
