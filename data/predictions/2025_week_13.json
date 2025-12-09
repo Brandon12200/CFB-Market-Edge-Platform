@@ -2,7 +2,7 @@
   "week": 13,
   "season": 2025,
   "generated_date": "2025-11-21T00:00:00.000Z",
-  "prediction_count": 26,
+  "prediction_count": 25,
   "predictions": [
     {
       "game_id": "MIAMI_VIRGINIA_TECH_week13",
@@ -11,13 +11,13 @@
       "away_team": "MIAMI",
       "vegas_spread": 18.0,
       "contrarian_spread": 19.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 67.2,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -68,13 +68,13 @@
       "away_team": "LOUISVILLE",
       "vegas_spread": -2.5,
       "contrarian_spread": -1.6,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "away",
       "confidence": 67.3,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -87,13 +87,13 @@
       "away_team": "PITTSBURGH",
       "vegas_spread": -2.5,
       "contrarian_spread": -1.6,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "away",
       "confidence": 65.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -106,7 +106,7 @@
       "away_team": "KANSAS STATE",
       "vegas_spread": -17.5,
       "contrarian_spread": -16.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.2,
       "recommendation": "LEAN - UTAH (home) - 1.0 point slight edge",
@@ -378,7 +378,7 @@
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -435,7 +435,7 @@
       "recommendation": "LEAN - OKLAHOMA (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -481,13 +481,13 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 26,
+    "total_games_analyzed": 25,
     "games_with_edges": 26,
     "hit_rate": 1.0,
     "average_confidence": 67.0,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 13,
-    "consensus_count": 13,
+    "slight_contrarian_count": 11,
+    "consensus_count": 14,
     "insufficient_data_count": 0
   }
 }

@@ -238,6 +238,9 @@
     "games_with_edges": 8,
     "hit_rate": 0.667,
     "average_confidence": 67.5,
-    "average_edge_size": 1.03
+    "average_edge_size": 1.03,
+    "consensus_count": 4,
+    "slight_contrarian_count": 8,
+    "insufficient_data_count": 0
   }
 }

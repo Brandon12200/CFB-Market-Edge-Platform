@@ -2,7 +2,7 @@
   "week": 8,
   "season": 2025,
   "generated_date": "2025-10-17T00:00:00.000Z",
-  "prediction_count": 28,
+  "prediction_count": 27,
   "predictions": [
     {
       "game_id": "FLORIDA_STATE_STANFORD_week8",
@@ -30,13 +30,13 @@
       "away_team": "PITTSBURGH",
       "vegas_spread": 9.5,
       "contrarian_spread": 10.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 66.5,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -182,13 +182,13 @@
       "away_team": "ARIZONA",
       "vegas_spread": 1.5,
       "contrarian_spread": 2.4,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "home",
       "confidence": 67.3,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -296,13 +296,13 @@
       "away_team": "PURDUE",
       "vegas_spread": -3.0,
       "contrarian_spread": -2.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.1,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -486,7 +486,7 @@
       "away_team": "MISSOURI",
       "vegas_spread": 1.5,
       "contrarian_spread": 2.4,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "home",
       "confidence": 65.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
@@ -519,13 +519,13 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 28,
+    "total_games_analyzed": 27,
     "games_with_edges": 28,
     "hit_rate": 1.0,
     "average_confidence": 66.7,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 13,
-    "consensus_count": 15,
+    "slight_contrarian_count": 10,
+    "consensus_count": 17,
     "insufficient_data_count": 0
   }
 }

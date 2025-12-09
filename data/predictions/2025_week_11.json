@@ -49,7 +49,7 @@
       "away_team": "STANFORD",
       "vegas_spread": -7.5,
       "contrarian_spread": -6.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 68.0,
       "recommendation": "LEAN - NORTH CAROLINA (home) - 1.0 point slight edge",
@@ -112,7 +112,7 @@
       "recommendation": "LEAN - TEXAS TECH (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -131,7 +131,7 @@
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -245,7 +245,7 @@
       "recommendation": "LEAN - PENN STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -429,8 +429,8 @@
     "hit_rate": 1.0,
     "average_confidence": 66.8,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 11,
-    "consensus_count": 11,
+    "slight_contrarian_count": 9,
+    "consensus_count": 13,
     "insufficient_data_count": 0
   }
 }

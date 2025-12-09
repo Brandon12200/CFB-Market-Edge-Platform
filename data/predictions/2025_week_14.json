@@ -2,7 +2,7 @@
   "week": 14,
   "season": 2025,
   "generated_date": "2025-11-26T00:00:00.000Z",
-  "prediction_count": 34,
+  "prediction_count": 33,
   "predictions": [
     {
       "game_id": "VIRGINIA_TECH_VIRGINIA_week14",
@@ -163,13 +163,13 @@
       "away_team": "IOWA STATE",
       "vegas_spread": 14.0,
       "contrarian_spread": 15.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 68.0,
       "recommendation": "LEAN - OKLAHOMA STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -334,7 +334,7 @@
       "away_team": "NORTHWESTERN",
       "vegas_spread": -7.0,
       "contrarian_spread": -5.9,
-      "predicted_edge": 1.10,
+      "predicted_edge": 1.1,
       "edge_direction": "away",
       "confidence": 67.4,
       "recommendation": "LEAN - ILLINOIS (home) - 1.1 point slight edge",
@@ -524,13 +524,13 @@
       "away_team": "VANDERBILT",
       "vegas_spread": -2.5,
       "contrarian_spread": -1.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.2,
       "recommendation": "LEAN - TENNESSEE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -633,12 +633,12 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 34,
+    "total_games_analyzed": 33,
     "games_with_edges": 34,
     "hit_rate": 1.0,
     "average_confidence": 66.6,
     "average_edge_size": 0.97,
-    "slight_contrarian_count": 11,
+    "slight_contrarian_count": 10,
     "consensus_count": 23,
     "insufficient_data_count": 0
   }

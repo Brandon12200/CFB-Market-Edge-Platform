@@ -14,7 +14,6 @@
       "contrarian_spread": -1.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 65.2,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -29,7 +28,6 @@
       "contrarian_spread": 11.0,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 67.8,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -44,7 +42,6 @@
       "contrarian_spread": 4.0,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 66.3,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -59,7 +56,6 @@
       "contrarian_spread": -1.5,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 64.9,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -74,7 +70,6 @@
       "contrarian_spread": -0.5,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 65.5,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -89,7 +84,6 @@
       "contrarian_spread": -17.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 69.1,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -104,7 +98,6 @@
       "contrarian_spread": -2.0,
       "home_covered_vegas": false,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 66.7,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -119,7 +112,6 @@
       "contrarian_spread": -27.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 70.3,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -134,7 +126,6 @@
       "contrarian_spread": -5.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 67.4,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -149,7 +140,6 @@
       "contrarian_spread": 7.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 68.2,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -164,7 +154,6 @@
       "contrarian_spread": -4.0,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 67.0,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -179,7 +168,6 @@
       "contrarian_spread": -2.5,
       "home_covered_vegas": false,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 65.8,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     }
@@ -187,8 +175,6 @@
   "summary": {
     "total_games": 12,
     "games_with_results": 12,
-    "correct_predictions": 9,
-    "accuracy": 0.75,
-    "accuracy_percentage": "75.0%"
+    "games_with_predictions": 12
   }
 }

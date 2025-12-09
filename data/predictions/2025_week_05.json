@@ -2,7 +2,7 @@
   "week": 5,
   "season": 2025,
   "generated_date": "2025-09-27T00:00:00.000Z",
-  "prediction_count": 16,
+  "prediction_count": 15,
   "predictions": [
     {
       "game_id": "VIRGINIA_TECH_NC_STATE_week5",
@@ -11,7 +11,7 @@
       "away_team": "VIRGINIA TECH",
       "vegas_spread": -9.5,
       "contrarian_spread": -8.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.5,
       "recommendation": "LEAN - NC STATE (home) - 1.0 point slight edge",
@@ -39,23 +39,6 @@
         "situational_context": 0.94
       },
       "data_quality": 100.0,
-      "variance_analysis": {},
-      "timestamp": "2025-09-27T00:00:00.000Z"
-    },
-    {
-      "game_id": "FLORIDA_STATE_VIRGINIA_week5",
-      "week": 5,
-      "home_team": "VIRGINIA",
-      "away_team": "FLORIDA STATE",
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "predicted_edge": null,
-      "edge_direction": null,
-      "confidence": 36.7,
-      "recommendation": "AVOID - Insufficient data for reliable prediction",
-      "prediction_type": "INSUFFICIENT_DATA",
-      "factor_breakdown": {},
-      "data_quality": 0.0,
       "variance_analysis": {},
       "timestamp": "2025-09-27T00:00:00.000Z"
     },
@@ -136,40 +119,6 @@
       "timestamp": "2025-09-27T00:00:00.000Z"
     },
     {
-      "game_id": "CINCINNATI_KANSAS_week5",
-      "week": 5,
-      "home_team": "KANSAS",
-      "away_team": "CINCINNATI",
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "predicted_edge": null,
-      "edge_direction": null,
-      "confidence": 36.6,
-      "recommendation": "AVOID - Insufficient data for reliable prediction",
-      "prediction_type": "INSUFFICIENT_DATA",
-      "factor_breakdown": {},
-      "data_quality": 0.0,
-      "variance_analysis": {},
-      "timestamp": "2025-09-27T00:00:00.000Z"
-    },
-    {
-      "game_id": "TCU_ARIZONA_STATE_week5",
-      "week": 5,
-      "home_team": "ARIZONA STATE",
-      "away_team": "TCU",
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "predicted_edge": null,
-      "edge_direction": null,
-      "confidence": 38.5,
-      "recommendation": "AVOID - Insufficient data for reliable prediction",
-      "prediction_type": "INSUFFICIENT_DATA",
-      "factor_breakdown": {},
-      "data_quality": 0.0,
-      "variance_analysis": {},
-      "timestamp": "2025-09-27T00:00:00.000Z"
-    },
-    {
       "game_id": "INDIANA_IOWA_week5",
       "week": 5,
       "home_team": "IOWA",
@@ -239,26 +188,9 @@
       "recommendation": "LEAN - PENN STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
-      "variance_analysis": {},
-      "timestamp": "2025-09-27T00:00:00.000Z"
-    },
-    {
-      "game_id": "USC_ILLINOIS_week5",
-      "week": 5,
-      "home_team": "ILLINOIS",
-      "away_team": "USC",
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "predicted_edge": null,
-      "edge_direction": null,
-      "confidence": 38.5,
-      "recommendation": "AVOID - Insufficient data for reliable prediction",
-      "prediction_type": "INSUFFICIENT_DATA",
-      "factor_breakdown": {},
-      "data_quality": 0.0,
       "variance_analysis": {},
       "timestamp": "2025-09-27T00:00:00.000Z"
     },
@@ -359,13 +291,13 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 20,
-    "games_with_edges": 16,
+    "total_games_analyzed": 15,
+    "games_with_edges": 15,
     "hit_rate": 0.8,
     "average_confidence": 62.8,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 10,
+    "slight_contrarian_count": 9,
     "consensus_count": 6,
-    "insufficient_data_count": 4
+    "insufficient_data_count": 0
   }
 }

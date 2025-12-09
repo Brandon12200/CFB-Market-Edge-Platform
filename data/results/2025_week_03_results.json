@@ -4,51 +4,6 @@
   "recorded_date": "2025-09-19",
   "results": [
     {
-      "game_id": "NC_STATE_WAKE_FOREST_week3",
-      "home_team": "WAKE FOREST",
-      "away_team": "NC STATE",
-      "home_score": 24,
-      "away_score": 34,
-      "actual_spread": -10,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 36.7,
-      "prediction_type": "INSUFFICIENT_DATA"
-    },
-    {
-      "game_id": "COLORADO_HOUSTON_week3",
-      "home_team": "HOUSTON",
-      "away_team": "COLORADO",
-      "home_score": 36,
-      "away_score": 20,
-      "actual_spread": 16,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 37.0,
-      "prediction_type": "INSUFFICIENT_DATA"
-    },
-    {
-      "game_id": "KANSAS_STATE_ARIZONA_week3",
-      "home_team": "ARIZONA",
-      "away_team": "KANSAS STATE",
-      "home_score": 23,
-      "away_score": 17,
-      "actual_spread": 6,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 38.5,
-      "prediction_type": "INSUFFICIENT_DATA"
-    },
-    {
       "game_id": "BOSTON_COLLEGE_STANFORD_week3",
       "home_team": "STANFORD",
       "away_team": "BOSTON COLLEGE",
@@ -59,39 +14,8 @@
       "contrarian_spread": 15.0,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 69.0,
       "prediction_type": "SLIGHT_CONTRARIAN"
-    },
-    {
-      "game_id": "CLEMSON_GEORGIA_TECH_week3",
-      "home_team": "GEORGIA TECH",
-      "away_team": "CLEMSON",
-      "home_score": 24,
-      "away_score": 21,
-      "actual_spread": 3,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 38.5,
-      "prediction_type": "INSUFFICIENT_DATA"
-    },
-    {
-      "game_id": "OREGON_NORTHWESTERN_week3",
-      "home_team": "NORTHWESTERN",
-      "away_team": "OREGON",
-      "home_score": 14,
-      "away_score": 34,
-      "actual_spread": -20,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 37.0,
-      "prediction_type": "INSUFFICIENT_DATA"
     },
     {
       "game_id": "USC_PURDUE_week3",
@@ -104,7 +28,6 @@
       "contrarian_spread": 21.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 65.2,
       "prediction_type": "SLIGHT_CONTRARIAN"
     },
@@ -119,7 +42,6 @@
       "contrarian_spread": -2.6,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 65.5,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -134,7 +56,6 @@
       "contrarian_spread": -5.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 67.9,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -149,7 +70,6 @@
       "contrarian_spread": -2.0,
       "home_covered_vegas": false,
       "home_covered_contrarian": false,
-      "prediction_correct": false,
       "confidence": 65.9,
       "prediction_type": "CONSENSUS_ALIGNMENT"
     },
@@ -164,7 +84,6 @@
       "contrarian_spread": -5.9,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 65.7,
       "prediction_type": "SLIGHT_CONTRARIAN"
     },
@@ -179,47 +98,13 @@
       "contrarian_spread": -5.5,
       "home_covered_vegas": true,
       "home_covered_contrarian": true,
-      "prediction_correct": true,
       "confidence": 67.9,
       "prediction_type": "CONSENSUS_ALIGNMENT"
-    },
-    {
-      "game_id": "WISCONSIN_ALABAMA_week3",
-      "home_team": "ALABAMA",
-      "away_team": "WISCONSIN",
-      "home_score": 38,
-      "away_score": 14,
-      "actual_spread": 24,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 38.5,
-      "prediction_type": "INSUFFICIENT_DATA"
-    },
-    {
-      "game_id": "SMU_MISSISSIPPI_STATE_week3",
-      "home_team": "MISSISSIPPI STATE",
-      "away_team": "SMU",
-      "home_score": 10,
-      "away_score": 28,
-      "actual_spread": -18,
-      "vegas_spread": null,
-      "contrarian_spread": null,
-      "home_covered_vegas": null,
-      "home_covered_contrarian": null,
-      "prediction_correct": null,
-      "confidence": 36.5,
-      "prediction_type": "INSUFFICIENT_DATA"
     }
   ],
   "summary": {
-    "total_games": 14,
-    "games_with_results": 14,
-    "games_with_predictions": 7,
-    "correct_predictions": 5,
-    "accuracy": 0.7142857142857143,
-    "accuracy_percentage": "71.4%"
+    "total_games": 7,
+    "games_with_results": 7,
+    "games_with_predictions": 7
   }
 }

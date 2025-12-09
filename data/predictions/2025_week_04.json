@@ -2,7 +2,7 @@
   "week": 4,
   "season": 2025,
   "generated_date": "2025-09-19T00:00:00.000Z",
-  "prediction_count": 18,
+  "prediction_count": 17,
   "predictions": [
     {
       "game_id": "SYRACUSE_CLEMSON_week4",
@@ -201,13 +201,13 @@
       "away_team": "MICHIGAN",
       "vegas_spread": 1.5,
       "contrarian_spread": 2.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 66.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -277,13 +277,13 @@
       "away_team": "NORTH CAROLINA",
       "vegas_spread": -7.0,
       "contrarian_spread": -6.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 66.7,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -329,12 +329,13 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 18,
+    "total_games_analyzed": 17,
     "games_with_edges": 18,
     "hit_rate": 1.0,
     "average_confidence": 66.5,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 9,
-    "consensus_count": 9
+    "consensus_count": 10,
+    "slight_contrarian_count": 7,
+    "insufficient_data_count": 0
   }
 }

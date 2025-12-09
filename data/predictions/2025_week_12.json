@@ -68,13 +68,13 @@
       "away_team": "NORTH CAROLINA",
       "vegas_spread": -6.5,
       "contrarian_spread": -5.6,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "away",
       "confidence": 65.9,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -410,7 +410,7 @@
       "away_team": "FLORIDA",
       "vegas_spread": -15.5,
       "contrarian_spread": -14.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 66.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
@@ -524,8 +524,8 @@
     "hit_rate": 1.0,
     "average_confidence": 66.9,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 16,
-    "consensus_count": 11,
+    "slight_contrarian_count": 15,
+    "consensus_count": 12,
     "insufficient_data_count": 0
   }
 }

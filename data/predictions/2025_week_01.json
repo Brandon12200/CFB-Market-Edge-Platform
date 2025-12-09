@@ -49,13 +49,13 @@
       "away_team": "NOTRE DAME",
       "vegas_spread": 2.5,
       "contrarian_spread": 3.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 65.9,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -219,6 +219,9 @@
     "games_with_edges": 3,
     "hit_rate": 0.273,
     "average_confidence": 67.9,
-    "average_edge_size": 0.98
+    "average_edge_size": 0.98,
+    "consensus_count": 8,
+    "slight_contrarian_count": 3,
+    "insufficient_data_count": 0
   }
 }

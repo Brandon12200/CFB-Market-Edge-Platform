@@ -2,7 +2,7 @@
   "week": 6,
   "season": 2025,
   "generated_date": "2025-10-03T00:00:00.000Z",
-  "prediction_count": 24,
+  "prediction_count": 23,
   "predictions": [
     {
       "game_id": "SYRACUSE_SMU_week6",
@@ -87,13 +87,13 @@
       "away_team": "WAKE FOREST",
       "vegas_spread": -6.0,
       "contrarian_spread": -5.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.1,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -163,7 +163,7 @@
       "away_team": "COLORADO",
       "vegas_spread": -13.5,
       "contrarian_spread": -12.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 66.6,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
@@ -353,13 +353,13 @@
       "away_team": "WASHINGTON",
       "vegas_spread": 5.5,
       "contrarian_spread": 6.4,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "home",
       "confidence": 67.3,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -410,7 +410,7 @@
       "away_team": "VANDERBILT",
       "vegas_spread": -12.0,
       "contrarian_spread": -10.9,
-      "predicted_edge": 1.10,
+      "predicted_edge": 1.1,
       "edge_direction": "away",
       "confidence": 63.8,
       "recommendation": "LEAN - ALABAMA (home) - 1.1 point slight edge",
@@ -443,12 +443,12 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 24,
+    "total_games_analyzed": 23,
     "games_with_edges": 24,
     "hit_rate": 1.0,
     "average_confidence": 66.8,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 11,
+    "slight_contrarian_count": 10,
     "consensus_count": 13,
     "insufficient_data_count": 0
   }

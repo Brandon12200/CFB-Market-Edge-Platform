@@ -93,7 +93,7 @@
       "recommendation": "LEAN - OKLAHOMA STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -125,13 +125,13 @@
       "away_team": "UCF",
       "vegas_spread": -10.5,
       "contrarian_spread": -9.5,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "away",
       "confidence": 67.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -182,13 +182,13 @@
       "away_team": "TCU",
       "vegas_spread": 1.5,
       "contrarian_spread": 2.4,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "home",
       "confidence": 67.3,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 0.90
+        "situational_context": 0.9
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -226,7 +226,7 @@
       "recommendation": "LEAN - PENN STATE (home) - 1.1 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.10
+        "situational_context": 1.1
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -524,8 +524,8 @@
     "hit_rate": 1.0,
     "average_confidence": 66.7,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 13,
-    "consensus_count": 14,
+    "slight_contrarian_count": 12,
+    "consensus_count": 15,
     "insufficient_data_count": 0
   }
 }

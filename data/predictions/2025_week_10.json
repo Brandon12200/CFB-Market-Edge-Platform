@@ -2,7 +2,7 @@
   "week": 10,
   "season": 2025,
   "generated_date": "2025-10-31T00:00:00.000Z",
-  "prediction_count": 28,
+  "prediction_count": 27,
   "predictions": [
     {
       "game_id": "PITTSBURGH_STANFORD_week10",
@@ -207,7 +207,7 @@
       "recommendation": "LEAN - IOWA STATE (home) - 1.0 point slight edge",
       "prediction_type": "SLIGHT_CONTRARIAN",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -239,13 +239,13 @@
       "away_team": "ARIZONA",
       "vegas_spread": 4.0,
       "contrarian_spread": 5.0,
-      "predicted_edge": 1.00,
+      "predicted_edge": 1.0,
       "edge_direction": "home",
       "confidence": 66.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
       "prediction_type": "CONSENSUS_ALIGNMENT",
       "factor_breakdown": {
-        "situational_context": 1.00
+        "situational_context": 1.0
       },
       "data_quality": 100.0,
       "variance_analysis": {},
@@ -258,7 +258,7 @@
       "away_team": "UCF",
       "vegas_spread": -3.5,
       "contrarian_spread": -2.6,
-      "predicted_edge": 0.90,
+      "predicted_edge": 0.9,
       "edge_direction": "away",
       "confidence": 65.8,
       "recommendation": "CONSENSUS - Consider market consensus, minimal contrarian edge",
@@ -519,13 +519,13 @@
     }
   ],
   "system_stats": {
-    "total_games_analyzed": 28,
+    "total_games_analyzed": 27,
     "games_with_edges": 28,
     "hit_rate": 1.0,
     "average_confidence": 67.0,
     "average_edge_size": 1.0,
-    "slight_contrarian_count": 12,
-    "consensus_count": 16,
+    "slight_contrarian_count": 10,
+    "consensus_count": 17,
     "insufficient_data_count": 0
   }
 }
