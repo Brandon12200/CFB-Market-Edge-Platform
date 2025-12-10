@@ -1,345 +1,191 @@
-# College Football Market Edge Platform
+# CFB Contrarian Predictor
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-passing-green.svg)](#testing)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](#testing)
+A rule-based betting model that adjusts Vegas consensus spreads using 11 quantifiable factors. Built as a forward-testing experiment to evaluate whether systematic contrarian adjustments can identify mispriced college football games.
 
-Machine learning platform with production-grade architecture for identifying market inefficiencies in college football betting markets through advanced statistical analysis, market sentiment detection, and adaptive learning algorithms.
+## How It Works
 
-## Overview
+The model takes the Vegas spread and applies additive and multiplicative adjustments:
 
-This tool analyzes college football games by applying quantifiable "contrarian factors" to Vegas consensus lines, specifically seeking scenarios where the unfavored team has hidden advantages that the market may have overlooked. The system doesn't try to predict winners—it identifies systematic gaps between market perception and quantifiable team advantages.
+```
+Contrarian Spread = (Vegas Spread + Factor Adjustments) × Market Modifier
+Edge = |Contrarian Spread - Vegas Spread|
+```
 
-## Key Features
+### Factor System
 
-### **Advanced Analytics Engine**
-- **Multi-Factor Analysis**: Coaching experience differentials, situational contexts, momentum indicators
-- **Market Efficiency Detection**: Real-time line movement analysis and sharp money identification
-- **Adaptive Calibration**: Self-improving confidence scoring based on historical performance
-- **Dynamic Factor Weighting**: Automatically adjusts model weights based on predictive accuracy
+11 factors organized in a fixed-weight hierarchy:
 
-### **Production-Grade Architecture**
-- **Modular Design**: Clean separation of concerns with pluggable factor system
-- **Comprehensive Testing**: 95%+ test coverage with unit and integration tests
-- **Robust Error Handling**: Graceful degradation and detailed logging
-- **Performance Monitoring**: Built-in metrics and health checking
+| Category | Weight | Factors |
+|----------|--------|---------|
+| Primary | 60% | Scheduling Fatigue (±3.5 pts), Head-to-Head Record, Desperation Index |
+| Secondary | 30% | Experience Differential, Pressure Situation, Revenge Game, Lookahead Spot, Point Differential Trends, Close Game Performance, Style Mismatch |
+| Modifier | 10% | Market Sentiment (0.5x–1.5x multiplier based on line movement) |
 
-### **Intelligent Filtering**
-- **Game Quality Assessment**: Filters high-variance and low-quality betting opportunities
-- **Conference-Aware Analysis**: Specialized handling for different conference dynamics
-- **Weather & Situational Context**: Environmental and temporal factor integration
-- **Data Quality Validation**: Ensures predictions are based on reliable information
+Each factor inherits from `BaseFactorCalculator` and implements:
+- `calculate()` — returns a point adjustment
+- `calculate_with_confidence()` — returns adjustment + confidence level + reasoning
+- `get_output_range()` — defines valid output bounds for the factor
 
-## Installation
+Factors have activation thresholds. Signals below threshold are zeroed out to avoid noise from weak signals affecting the prediction.
+
+### Variance Detection
+
+The variance detector analyzes factor agreement using coefficient of variation. When factors disagree significantly (e.g., scheduling fatigue favors Team A but market sentiment favors Team B), the game receives a reduced confidence score. This flags high-uncertainty situations where the model's signal is conflicted.
+
+See `METHODOLOGY.md` for full algorithm documentation including the model lock verification process.
+
+## Results
+
+**2025 Season, Weeks 1–14**
+
+| Metric | Value |
+|--------|-------|
+| Games | 300 |
+| Accuracy (ATS) | 57.0% |
+| ROI (at -110) | +8.82% |
+| Sharpe Ratio | 0.093 |
+
+### Experiment Integrity
+
+The model was locked on **August 25, 2025**—before Week 1 kicked off. Since then:
+
+- Zero modifications to prediction logic or factor weights
+- No parameter tuning based on results
+- Predictions generated and stored before each week's games
+- Results recorded separately with actual outcomes
+
+This separation ensures the numbers above reflect true out-of-sample performance, not backtested or curve-fit metrics.
+
+### Data Storage
+
+All predictions and results are stored as JSON for independent verification:
+
+- `data/predictions/2025_week_XX.json` — Pre-game predictions with timestamps
+- `data/results/2025_week_XX_results.json` — Post-game results with actual scores
+
+Each prediction record includes: Vegas spread, contrarian spread, confidence score, factor breakdown, and data quality assessment.
+
+## System Design
+
+### Data Pipeline
+
+Three external APIs with fallback chain:
+
+| Source | Role | Data Provided |
+|--------|------|---------------|
+| The Odds API | Required | Live spreads from FanDuel, DraftKings, BetMGM, etc. |
+| College Football Data API | Primary | Coaching records, advanced stats, historical betting lines |
+| ESPN API | Fallback | Schedule and team data when CFBD is unavailable |
+
+The `DataManager` class coordinates requests across sources:
+1. Attempts CFBD first for coaching/stats data
+2. Falls back to ESPN if CFBD returns incomplete data
+3. If both fail, uses neutral values and penalizes prediction confidence
+4. Tracks which sources contributed to each prediction via `data_sources` field
+
+### Rate Limiting
+
+The `RateLimiter` class implements sliding window rate limiting:
+- Tracks timestamps of recent calls in a `deque`
+- Enforces both per-minute and per-day limits
+- Thread-safe using `threading.Lock`
+- Automatically waits when limits are reached
+
+This prevents API quota violations when running batch analyses.
+
+### Caching
+
+The `CacheManager` implements TTL-based caching:
+
+| Data Type | TTL | Rationale |
+|-----------|-----|-----------|
+| Coaching data | 24 hours | Changes infrequently |
+| Team stats | 1 hour | Updates after games |
+| Betting lines | 30 minutes | Can move quickly |
+
+Cache is thread-safe with automatic cleanup of expired entries. Each entry tracks access count and last access time for monitoring cache effectiveness.
+
+### Testing
+
+305 tests organized by component:
+
+- **Factor tests** — Each of the 11 factors has unit tests validating output ranges, edge cases, and expected behavior for known matchups
+- **API client tests** — Mock-based tests for each data source, including error handling and fallback behavior
+- **Cache tests** — TTL expiration, thread safety, eviction policies
+- **Integration tests** — End-to-end prediction flow from CLI input to final output
+
+Run with: `python -m pytest tests/ -v`
+
+## Project Structure
+
+```
+├── main.py                     # CLI entry point, argument parsing
+├── config.py                   # Configuration, API keys, factor weights
+├── METHODOLOGY.md              # Algorithm documentation, model lock verification
+├── engine/
+│   ├── prediction_engine.py    # Orchestrates factor calculation and aggregation
+│   ├── edge_detector.py        # Classifies edge size and generates recommendations
+│   ├── variance_detector.py    # Analyzes factor agreement/disagreement
+│   └── confidence_calculator.py # Computes final confidence score
+├── factors/
+│   ├── base_calculator.py      # Abstract base class defining factor interface
+│   ├── factor_registry.py      # Dynamic factor loading and weight normalization
+│   ├── scheduling_fatigue.py   # Travel distance, rest days, emotional game hangover
+│   ├── market_sentiment.py     # Line movement analysis, reverse line movement detection
+│   ├── coaching_edge.py        # Experience differential, head-to-head records
+│   ├── situational_context.py  # Desperation index, lookahead spots, revenge games
+│   ├── momentum_factors.py     # Point differential trends, close game performance
+│   └── style_mismatch.py       # Pace and efficiency matchup analysis
+├── data/
+│   ├── data_manager.py         # Multi-source coordinator with fallback logic
+│   ├── odds_client.py          # The Odds API client
+│   ├── cfbd_client.py          # College Football Data API client
+│   ├── espn_client.py          # ESPN API client
+│   ├── cache_manager.py        # TTL-based caching with thread safety
+│   ├── predictions/            # Weekly pre-game predictions (JSON)
+│   └── results/                # Weekly post-game results (JSON)
+├── utils/
+│   ├── rate_limiter.py         # Sliding window rate limiter
+│   └── normalizer.py           # Team name normalization (handles aliases, mascots)
+├── scripts/
+│   ├── calculate_accuracy.py   # Computes ATS accuracy from results
+│   ├── calculate_roi.py        # Computes ROI assuming -110 odds
+│   └── calculate_sharpe.py     # Computes Sharpe ratio of returns
+└── tests/                      # 305 tests
+```
+
+## Setup
 
 ```bash
 git clone https://github.com/Brandon12200/CFB-Market-Edge-Platform.git
 cd CFB-Market-Edge-Platform
-python -m venv cfb-env
-source cfb-env/bin/activate  # On Windows: cfb-env\\Scripts\\activate
 pip install -r requirements.txt
-cp .env.example .env
 ```
 
-## Required Configuration
-
-Add to your `.env` file:
-
-```bash
-# Required for betting lines (500 free calls/month)
-ODDS_API_KEY=your_odds_api_key
-
-# Highly recommended for enhanced analysis (5000 free calls/month)
-CFBD_API_KEY=your_cfbd_api_key
-
-# ESPN API - No key required (public endpoints used)
+Create `.env`:
 ```
-
-**API Key Sources:**
-- [The Odds API](https://theoddsapi.com) - Live betting lines
-- [College Football Data API](https://collegefootballdata.com) - Advanced stats and coaching data
-- ESPN API - No key required for basic access
+ODDS_API_KEY=your_key      # Required - theoddsapi.com
+CFBD_API_KEY=your_key      # Recommended - collegefootballdata.com
+```
 
 ## Usage
 
-### Single Game Analysis
 ```bash
-# Basic analysis
+# Single game prediction
 python main.py --home "Ohio State" --away "Michigan" --week 12
 
 # With detailed factor breakdown
-python main.py --home "Alabama" --away "Auburn" --week 13 --show-factors
+python main.py --home "Ohio State" --away "Michigan" --week 12 --show-factors
 
-# Verbose output with debugging info
-python main.py --home "Texas" --away "Oklahoma" --week 6 --verbose
-```
-
-### Weekly Analysis
-```bash
-# Analyze current week's games
-python main.py --analyze-week
-
-# Specific week with minimum edge filter
-python main.py --analyze-week 13 --min-edge 2.0
-
-# Output as JSON or CSV
-python main.py --analyze-week --format json
-```
-
-### System Utilities
-```bash
-# List all supported teams
-python main.py --list-teams
-
-# Validate team name
-python main.py --validate-team "Ohio State"
-
-# List games for specific week
+# List Power 4 games for a week
 python main.py --list-games 10
 
-# Check system configuration
-python main.py --check-config
-
-# Clear cache
-python main.py --cache-clear
-```
-
-### Factor Validation
-```bash
-# Validate all factors for realistic outputs
-python scripts/validate_factors.py
-
-# Validate specific factor
-python scripts/validate_factors.py --factor MarketSentiment
-
-# Generate validation report
-python scripts/validate_factors.py --output json --save validation_report.json
-```
-
-## Factor System Architecture
-
-The system employs a hierarchical factor structure with dynamic confidence-based weighting:
-
-### Factor Categories
-
-**Market & Style Factors** - Primary contrarian signals
-- Market Sentiment (39.1%) - Betting patterns and line movements
-- Style Mismatch (19.5%) - Statistical matchup advantages
-- Scheduling Fatigue (12.9%) - Rest and travel advantages
-
-**Coaching & Experience Factors** - Team leadership analysis
-- Experience Differential (3.9%) - Head coach experience advantages
-- Head-to-Head Record (3.9%) - Historical coaching matchups
-- Pressure Situation (3.9%) - Performance under pressure
-
-**Momentum & Situational Factors** - Game context
-- Close Game Performance (2.3%) - Clutch situation execution
-- Point Differential Trends (2.7%) - Recent scoring margin patterns
-- Desperation Index (3.9%) - Must-win situation analysis
-- Lookahead Sandwich (3.9%) - Schedule spot advantages
-- Revenge Game (3.9%) - Motivation factors
-
-Note: Weights are automatically normalized to sum to 1.0
-
-### Confidence-Based Weighting
-
-Each factor calculation includes a confidence assessment that adjusts its impact:
-- **VERY_HIGH** (90% weight) - Strong supporting data
-- **HIGH** (75% weight) - Good data quality
-- **MEDIUM** (50% weight) - Moderate confidence
-- **LOW** (25% weight) - Limited data
-- **NONE** (0% weight) - Insufficient data
-
-## Sample Output
-
-### Standard Analysis
-```
-Analyzing: MICHIGAN @ OHIO STATE
-Week: 12
---------------------------------------------------
-Fetching game data...
-Data Quality: 85.0%
-Vegas Spread: OHIO STATE -7.5
-
-Team Information:
-   OHIO STATE: Ohio State Buckeyes (Big Ten)
-   MICHIGAN: Michigan Wolverines (Big Ten)
-
-Coaching Comparison:
-   OHIO STATE: Ryan Day (8 years)
-   MICHIGAN: Sherrone Moore (2 years)
-   Experience Edge: OHIO STATE (+6 years)
-
-Generating Contrarian Prediction...
-
-Prediction Results:
-   Vegas Spread: OHIO STATE -7.5
-   Contrarian Prediction: OHIO STATE -5.8
-   Factor Adjustment: +1.7 points
-   Edge Size: 1.7 points
-
-Edge Analysis:
-   Edge Type: Moderate Edge
-   Confidence: High (72.4%)
-   Recommendation: MICHIGAN +7.5 - Contrarian value identified
-```
-
-### Factor Breakdown Example
-```
-Factor Breakdown:
-   MarketSentiment: x1.04 (multiplier)
-      → Moderate contrarian signal in market
-   StyleMismatch: +0.29 (weighted: +0.09)
-      → MICHIGAN has style advantages
-   SchedulingFatigue: -0.55 (weighted: -0.11)
-      → OHIO STATE has rest advantage
-   ExperienceDifferential: +0.84 (weighted: +0.34)
-      → OHIO STATE significant experience edge
-   DesperationIndex: +0.48 (weighted: +0.02)
-      → OHIO STATE slightly more desperate
-
-Category Summary:
-   Situational Context: +0.02 points
-   Coaching Edge: +0.34 points
-   Momentum Factors: +0.09 points
-   Market Modifiers: x1.04
-
-Variance Analysis:
-   Factor Agreement: MODERATE DISAGREEMENT
-   Confidence Adjustment: -10% (uncertainty penalty)
-   Bet Size Recommendation: 70% of normal
-```
-
-## Advanced Features
-
-### Variance Detection System
-
-The system analyzes factor disagreement to identify high-uncertainty games:
-- **CONSENSUS** - Factors strongly agree (high confidence)
-- **MILD DISAGREEMENT** - Minor variance (standard confidence)
-- **MODERATE DISAGREEMENT** - Notable variance (reduce bet size)
-- **STRONG DISAGREEMENT** - High uncertainty (significant caution)
-- **EXTREME DISAGREEMENT** - Factors completely split (avoid)
-
-### Trap Game Detection
-
-Identifies suspicious betting patterns that may indicate trap games:
-- Line freezes despite heavy public action
-- Reverse line movement (line moves against public money)
-- Key number sticking (lines frozen at 3, 7, 10, 14)
-- Pattern recognition for common trap setups
-
-### Data Quality Assessment
-
-Each prediction includes a data quality score that impacts confidence:
-- Team information availability
-- Coaching data completeness
-- Statistical coverage
-- API response quality
-- Cache freshness
-
-## System Architecture
-
-### Data Flow
-```
-User Input → CLI Parser → Prediction Engine → Factor Registry
-                                    ↓
-                            Data Manager ← Multi-Source APIs
-                                    ↓
-                            Factor Calculations
-                                    ↓
-                            Variance Analysis → Risk Assessment
-                                    ↓
-                            Final Prediction → Output Formatter
-```
-
-### Caching Strategy
-- **Team Data**: 7 days (stable information)
-- **Coaching Data**: 1 day (may change weekly)
-- **Game Context**: 1 hour (for live updates)
-- **API Responses**: Varies by endpoint volatility
-
-### Rate Limiting
-- **CFBD API**: 5000 calls/month (Tier 1)
-- **Odds API**: 500 calls/month (free tier)
-- **ESPN API**: 60 calls/minute (when used)
-
-## Development
-
-### Adding New Factors
-
-1. Create factor class inheriting from `BaseFactorCalculator`:
-```python
-class NewFactor(BaseFactorCalculator):
-    def __init__(self):
-        super().__init__()
-        self.weight = 0.15  # Factor weight within category
-        self.category = "momentum_factors"
-        self.activation_threshold = 0.5
-        
-    def calculate(self, home_team, away_team, context):
-        # Implementation logic
-        return adjustment_value
-```
-
-2. Place file in `factors/` directory
-3. System automatically discovers and loads the factor
-
-### Testing and Validation
-
-Run the comprehensive validation suite:
-```bash
-# Full system validation
-python scripts/validate_factors.py
-
-# Check for uniform outputs
-python scripts/validate_factors.py --quick
-
-# Generate HTML report
-python scripts/validate_factors.py --output html --save report.html
-
-# Validate performance metrics
-python validate_performance_metrics.py
-```
-
-The `validate_performance_metrics.py` script provides real-time validation of system performance claims including factor coverage, cache efficiency, and analysis latency.
-
-## Performance Characteristics
-
-- **Execution Time**: 2-5 seconds per game (with caching)
-- **API Efficiency**: ~10 API calls per fresh analysis
-- **Cache Hit Rate**: 60-70% in typical usage
-- **Memory Usage**: ~50MB baseline, ~100MB with full cache
-
-## Troubleshooting
-
-### Common Issues
-
-**"No edges found"**
-- Normal for efficiently priced games
-- Try games with larger spreads or strong public bias
-- Check data quality score
-
-**"Factor calculation failed"**
-- Usually indicates missing data
-- Check API keys and rate limits
-- Review logs/cfb_predictor.log for details
-
-**"Extreme variance detected"**
-- Factors strongly disagree
-- System working correctly—avoid these games
-- Consider waiting for more data
-
-### Debug Mode
-```bash
-# Enable detailed logging
-python main.py --home "Team1" --away "Team2" --week 8 --debug
-
-# Check system health
-python main.py --check-config --verbose
+# Run performance analysis scripts
+python scripts/calculate_accuracy.py
+python scripts/calculate_roi.py
+python scripts/calculate_sharpe.py
 ```
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT
