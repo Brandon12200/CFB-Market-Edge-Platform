@@ -1,6 +1,41 @@
 # CFB Contrarian Predictor
 
-A rule-based betting model that adjusts Vegas consensus spreads using 11 quantifiable factors. Built as a forward-testing experiment to evaluate whether systematic contrarian adjustments can identify mispriced college football games.
+Most betting models are backtested until they look good, then fail in production. This project was designed to avoid that trap—the model was frozen on August 25, 2025, before the season kicked off, and run forward with no modifications. The results below reflect genuine out-of-sample performance, not curve-fitting.
+
+The model itself is a rule-based system that adjusts Vegas consensus spreads using 11 quantifiable factors. What makes it worth examining isn't the 57% accuracy—it's that the experiment was structured to actually know whether that number is real.
+
+## Experiment Design
+
+The model was locked on **August 25, 2025**—three days before Week 1. Since then:
+
+- Zero modifications to prediction logic or factor weights
+- No parameter tuning based on observed results
+- Predictions generated and committed to git before each week's games
+- Results recorded separately with actual outcomes
+
+This separation ensures the numbers below reflect true out-of-sample performance. Git history provides the audit trail—`git log --oneline -- engine/prediction_engine.py` shows no changes since August 25.
+
+## Results
+
+**2025 Season, Weeks 1–14**
+
+| Metric | Value |
+|--------|-------|
+| Games | 300 |
+| Accuracy (ATS) | 57.0% |
+| ROI (at -110) | +8.82% |
+| Sharpe Ratio | 0.093 |
+
+300 games provides moderate statistical confidence; the 95% confidence interval for true accuracy is approximately 51–63%. The Sharpe ratio contextualizes returns against week-to-week variance—a 0.093 Sharpe over 14 weeks suggests positive edge but acknowledges the volatility inherent in small samples.
+
+### Data Storage
+
+All predictions and results are stored as JSON for independent verification:
+
+- `data/predictions/2025_week_XX.json` — Pre-game predictions with timestamps
+- `data/results/2025_week_XX_results.json` — Post-game results with actual scores
+
+Each prediction record includes: Vegas spread, contrarian spread, confidence score, factor breakdown, and data quality assessment.
 
 ## How It Works
 
@@ -17,53 +52,59 @@ Edge = |Contrarian Spread - Vegas Spread|
 
 | Category | Weight | Factors |
 |----------|--------|---------|
-| Primary | 60% | Scheduling Fatigue (±3.5 pts), Head-to-Head Record, Desperation Index |
+| Primary | 60% | Scheduling Fatigue (±3.5 pts), Head-to-Head Record (±2 pts), Desperation Index (±2.5 pts) |
 | Secondary | 30% | Experience Differential, Pressure Situation, Revenge Game, Lookahead Spot, Point Differential Trends, Close Game Performance, Style Mismatch |
 | Modifier | 10% | Market Sentiment (0.5x–1.5x multiplier based on line movement) |
 
-Each factor inherits from `BaseFactorCalculator` and implements:
-- `calculate()` — returns a point adjustment
-- `calculate_with_confidence()` — returns adjustment + confidence level + reasoning
-- `get_output_range()` — defines valid output bounds for the factor
+Each factor inherits from `BaseFactorCalculator` and implements `calculate()`, `calculate_with_confidence()`, and `get_output_range()`. Factors have activation thresholds—signals below threshold are zeroed out to avoid noise from weak signals.
 
-Factors have activation thresholds. Signals below threshold are zeroed out to avoid noise from weak signals affecting the prediction.
+### Why These Factors
+
+Factors were selected based on market inefficiencies documented in betting literature and situations where public perception tends to diverge from actual game dynamics.
+
+**Scheduling fatigue** is weighted highest because travel and rest disadvantages are quantifiable and historically underpriced by markets—a team playing its third road game in four weeks after an emotional rivalry win carries compounding fatigue that Vegas lines often underweight.
+
+**Situational context** (desperation, lookahead, revenge) captures motivational asymmetries. A 4-5 team needing two wins for bowl eligibility plays differently than their record suggests; a team facing a cupcake before their rivalry game may underperform.
+
+**Market sentiment** acts as a contrarian signal—when line movement diverges from betting percentages (reverse line movement), sharp money may be identifying value the public missed.
+
+The factors deliberately exclude anything that would require subjective judgment or insider information. Everything is computable from public data.
 
 ### Variance Detection
 
-The variance detector analyzes factor agreement using coefficient of variation. When factors disagree significantly (e.g., scheduling fatigue favors Team A but market sentiment favors Team B), the game receives a reduced confidence score. This flags high-uncertainty situations where the model's signal is conflicted.
+The variance detector analyzes factor agreement using coefficient of variation. When factors disagree significantly (e.g., scheduling fatigue favors Team A but market sentiment favors Team B), the game receives a reduced confidence score.
 
-See `METHODOLOGY.md` for full algorithm documentation including the model lock verification process.
+Games with high variance scores are flagged as low-confidence; a user could filter to only bet games where factors align, trading volume for expected accuracy. This is where the model says "I don't have a strong opinion" rather than forcing a prediction.
 
-## Results
+## Design Decisions
 
-**2025 Season, Weeks 1–14**
+**Why a fixed-weight hierarchy instead of learned weights?**
+Learned weights require training data, which means backtesting, which means overfitting risk. Fixed weights force explicit assumptions—if scheduling fatigue should matter more than revenge games, that hypothesis is baked in before seeing any results. Wrong assumptions are exposed cleanly rather than hidden in optimized parameters.
 
-| Metric | Value |
-|--------|-------|
-| Games | 300 |
-| Accuracy (ATS) | 57.0% |
-| ROI (at -110) | +8.82% |
-| Sharpe Ratio | 0.093 |
+**Why activation thresholds that zero out weak signals?**
+A team that's "slightly fatigued" or in a "minor revenge spot" probably isn't mispriced—markets are efficient enough to handle small effects. Thresholds accept that not every game has an exploitable edge and reduce noise from marginal signals affecting predictions.
 
-### Experiment Integrity
+**Why freeze the model pre-season instead of updating weekly?**
+The experiment's purpose was to test whether a static model could find edges, not to build an adaptive system. Weekly updates would introduce the same curve-fitting problem the project was designed to avoid. One season of frozen predictions produces cleaner signal on whether the underlying factors have predictive value.
 
-The model was locked on **August 25, 2025**—before Week 1 kicked off. Since then:
+**What would change for next season?**
+See "What I Learned" below.
 
-- Zero modifications to prediction logic or factor weights
-- No parameter tuning based on results
-- Predictions generated and stored before each week's games
-- Results recorded separately with actual outcomes
+## What I Learned
 
-This separation ensures the numbers above reflect true out-of-sample performance, not backtested or curve-fit metrics.
+**Scheduling fatigue appears to be the strongest signal.** Games where one team had significant rest/travel disadvantage showed the highest edge capture rate. This aligns with the hypothesis that physical factors are more reliably underpriced than motivational ones.
 
-### Data Storage
+**"Revenge game" and "lookahead spot" were noisier than expected.** These situational factors produced high variance in outcomes—sometimes they mattered enormously, sometimes not at all. A v2 might reduce their weight or require additional confirming factors before activating them.
 
-All predictions and results are stored as JSON for independent verification:
+**High-confidence predictions outperformed low-confidence ones.** The variance detector's "I don't know" signal had value—filtering to only games with aligned factors would have improved accuracy at the cost of volume. This suggests the confidence scoring is capturing something real.
 
-- `data/predictions/2025_week_XX.json` — Pre-game predictions with timestamps
-- `data/results/2025_week_XX_results.json` — Post-game results with actual scores
+**What v2 would look like:**
+- Reduce weight on situational/motivational factors
+- Increase threshold for activation (be more selective)
+- Add explicit "no bet" recommendations for low-confidence games
+- Consider conference-specific adjustments (market efficiency varies)
 
-Each prediction record includes: Vegas spread, contrarian spread, confidence score, factor breakdown, and data quality assessment.
+The goal isn't to build a production betting system—it's to demonstrate that disciplined quantitative thinking can extract signal from public data, and that honest experiment design reveals what works.
 
 ## System Design
 
@@ -77,81 +118,53 @@ Three external APIs with fallback chain:
 | College Football Data API | Primary | Coaching records, advanced stats, historical betting lines |
 | ESPN API | Fallback | Schedule and team data when CFBD is unavailable |
 
-The `DataManager` class coordinates requests across sources:
-1. Attempts CFBD first for coaching/stats data
-2. Falls back to ESPN if CFBD returns incomplete data
-3. If both fail, uses neutral values and penalizes prediction confidence
-4. Tracks which sources contributed to each prediction via `data_sources` field
+The `DataManager` class coordinates requests across sources. If CFBD fails, it falls back to ESPN. If both fail, it uses neutral values and penalizes prediction confidence.
 
-### Rate Limiting
+### Rate Limiting & Caching
 
-The `RateLimiter` class implements sliding window rate limiting:
-- Tracks timestamps of recent calls in a `deque`
-- Enforces both per-minute and per-day limits
-- Thread-safe using `threading.Lock`
-- Automatically waits when limits are reached
-
-This prevents API quota violations when running batch analyses.
-
-### Caching
-
-The `CacheManager` implements TTL-based caching:
-
-| Data Type | TTL | Rationale |
-|-----------|-----|-----------|
-| Coaching data | 24 hours | Changes infrequently |
-| Team stats | 1 hour | Updates after games |
-| Betting lines | 30 minutes | Can move quickly |
-
-Cache is thread-safe with automatic cleanup of expired entries. Each entry tracks access count and last access time for monitoring cache effectiveness.
+The `RateLimiter` implements sliding window rate limiting with thread-safe tracking. The `CacheManager` implements TTL-based caching (24h for coaching data, 1h for stats, 30min for lines) with automatic cleanup.
 
 ### Testing
 
-305 tests organized by component:
-
-- **Factor tests** — Each of the 11 factors has unit tests validating output ranges, edge cases, and expected behavior for known matchups
-- **API client tests** — Mock-based tests for each data source, including error handling and fallback behavior
-- **Cache tests** — TTL expiration, thread safety, eviction policies
-- **Integration tests** — End-to-end prediction flow from CLI input to final output
+305 tests covering factors, API clients, caching, and end-to-end prediction flow.
 
 Run with: `python -m pytest tests/ -v`
 
 ## Project Structure
 
 ```
-├── main.py                     # CLI entry point, argument parsing
+├── main.py                     # CLI entry point
 ├── config.py                   # Configuration, API keys, factor weights
-├── METHODOLOGY.md              # Algorithm documentation, model lock verification
 ├── engine/
-│   ├── prediction_engine.py    # Orchestrates factor calculation and aggregation
-│   ├── edge_detector.py        # Classifies edge size and generates recommendations
-│   ├── variance_detector.py    # Analyzes factor agreement/disagreement
-│   └── confidence_calculator.py # Computes final confidence score
+│   ├── prediction_engine.py    # Factor calculation and aggregation
+│   ├── edge_detector.py        # Edge classification and recommendations
+│   ├── variance_detector.py    # Factor agreement analysis
+│   └── confidence_calculator.py
 ├── factors/
-│   ├── base_calculator.py      # Abstract base class defining factor interface
-│   ├── factor_registry.py      # Dynamic factor loading and weight normalization
-│   ├── scheduling_fatigue.py   # Travel distance, rest days, emotional game hangover
-│   ├── market_sentiment.py     # Line movement analysis, reverse line movement detection
-│   ├── coaching_edge.py        # Experience differential, head-to-head records
-│   ├── situational_context.py  # Desperation index, lookahead spots, revenge games
-│   ├── momentum_factors.py     # Point differential trends, close game performance
-│   └── style_mismatch.py       # Pace and efficiency matchup analysis
+│   ├── base_calculator.py      # Abstract base class
+│   ├── factor_registry.py      # Dynamic factor loading
+│   ├── scheduling_fatigue.py   # Travel, rest, emotional hangover
+│   ├── market_sentiment.py     # Line movement, reverse line movement
+│   ├── coaching_edge.py        # Experience, head-to-head records
+│   ├── situational_context.py  # Desperation, lookahead, revenge
+│   ├── momentum_factors.py     # Point differential, close games
+│   └── style_mismatch.py       # Pace and efficiency matchups
 ├── data/
-│   ├── data_manager.py         # Multi-source coordinator with fallback logic
-│   ├── odds_client.py          # The Odds API client
-│   ├── cfbd_client.py          # College Football Data API client
-│   ├── espn_client.py          # ESPN API client
-│   ├── cache_manager.py        # TTL-based caching with thread safety
-│   ├── predictions/            # Weekly pre-game predictions (JSON)
-│   └── results/                # Weekly post-game results (JSON)
+│   ├── data_manager.py         # Multi-source coordinator
+│   ├── odds_client.py          # The Odds API
+│   ├── cfbd_client.py          # College Football Data API
+│   ├── espn_client.py          # ESPN API
+│   ├── cache_manager.py        # TTL caching
+│   ├── predictions/            # Weekly pre-game predictions
+│   └── results/                # Weekly post-game results
 ├── utils/
-│   ├── rate_limiter.py         # Sliding window rate limiter
-│   └── normalizer.py           # Team name normalization (handles aliases, mascots)
+│   ├── rate_limiter.py
+│   └── normalizer.py           # Team name normalization
 ├── scripts/
-│   ├── calculate_accuracy.py   # Computes ATS accuracy from results
-│   ├── calculate_roi.py        # Computes ROI assuming -110 odds
-│   └── calculate_sharpe.py     # Computes Sharpe ratio of returns
-└── tests/                      # 305 tests
+│   ├── calculate_accuracy.py
+│   ├── calculate_roi.py
+│   └── calculate_sharpe.py
+└── tests/
 ```
 
 ## Setup
@@ -180,7 +193,7 @@ python main.py --home "Ohio State" --away "Michigan" --week 12 --show-factors
 # List Power 4 games for a week
 python main.py --list-games 10
 
-# Run performance analysis scripts
+# Run performance analysis
 python scripts/calculate_accuracy.py
 python scripts/calculate_roi.py
 python scripts/calculate_sharpe.py
