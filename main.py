@@ -137,7 +137,7 @@ Examples:
         type=float,
         default=60.0,
         metavar='PERCENT',
-        help='Minimum confidence percentage to display (default: 60.0%)'
+        help='Minimum confidence percentage to display (default: 60.0%%)'
     )
     batch_group.add_argument(
         '--delay',
@@ -422,22 +422,22 @@ def validate_team_name(team_name: str) -> None:
     """Validate a single team name and show normalization."""
     _ensure_imports()
     normalized = normalizer.normalize(team_name)
-    
+
     if normalized:
-        print(f"✓ '{team_name}' normalizes to: {normalized}")
-        
+        print(f"'{team_name}' normalizes to: {normalized}")
+
         aliases = normalizer.get_all_aliases(normalized)
         print(f"  Known aliases: {', '.join(aliases)}")
-        
+
         espn_format = normalizer.to_espn_format(normalized)
         if espn_format:
             print(f"  ESPN format: {espn_format}")
-        
+
         odds_format = normalizer.to_odds_format(normalized)
         if odds_format:
             print(f"  Odds API format: {odds_format}")
     else:
-        print(f"✗ '{team_name}' not recognized")
+        print(f"'{team_name}' not recognized")
         print("Use --list-teams to see supported team names")
 
 
@@ -446,29 +446,29 @@ def list_games(week: int) -> None:
     _ensure_imports()
     print(f"CFB Week {week} Schedule - P4 Games")
     print("=" * 60)
-    
+
     try:
         # Initialize schedule client
         from data.schedule_client import CFBScheduleClient
         schedule_client = CFBScheduleClient()
-        
+
         # Test connection first
         if not schedule_client.test_connection():
-            print("❌ Cannot connect to ESPN Schedule API")
+            print("Cannot connect to ESPN Schedule API")
             print("   Check your internet connection and try again")
             return
-        
-        print(f"📊 Fetching Week {week} schedule...")
-        
+
+        print(f"Fetching Week {week} schedule...")
+
         # Get P4 games for the week
         p4_games = schedule_client.get_p4_games(week)
-        
+
         if not p4_games:
-            print(f"📭 No P4 games found for Week {week}")
+            print(f"No P4 games found for Week {week}")
             print("   This may be an off-season week or the data isn't available yet")
             return
-        
-        print(f"🏈 Found {len(p4_games)} P4 games for Week {week}")
+
+        print(f"Found {len(p4_games)} P4 games for Week {week}")
         print("-" * 80)
         
         # Display each game in single-line format
@@ -506,13 +506,13 @@ def list_games(week: int) -> None:
                 print(f"{i:2d}. {matchup} {venue_info} | [Normalization incomplete]")
         
         print("=" * 60)
-        print("💡 Tips:")
-        print("   • Use the Command lines above to test individual games")
-        print("   • Add --verbose --show-factors for detailed analysis")
-        print(f"   • Try: python main.py --analyze-week {week} for batch analysis")
-        
+        print("Tips:")
+        print("   - Use the Command lines above to test individual games")
+        print("   - Add --verbose --show-factors for detailed analysis")
+        print(f"   - Try: python main.py --analyze-week {week} for batch analysis")
+
     except Exception as e:
-        print(f"❌ Error fetching Week {week} schedule: {e}")
+        print(f"Error fetching Week {week} schedule: {e}")
         print("   Check your configuration and try again")
 
 
@@ -529,15 +529,15 @@ def check_configuration() -> bool:
     
     # Check API keys
     api_status = config.validate_api_keys()
-    print(f"Odds API Key: {'✓ Configured' if api_status['odds_api'] else '✗ Missing'}")
-    print(f"ESPN API Key: {'✓ Configured' if api_status['espn_api'] == True else '○ Optional' if api_status['espn_api'] == 'optional' else '✗ Missing'}")
-    
+    print(f"Odds API Key: {'Configured' if api_status['odds_api'] else 'Missing'}")
+    print(f"ESPN API Key: {'Configured' if api_status['espn_api'] == True else 'Optional' if api_status['espn_api'] == 'optional' else 'Missing'}")
+
     # Test API connections
     print(f"\nAPI Connection Tests:")
     try:
         connections = data_manager.test_all_connections()
-        print(f"  Odds API: {'✓ Connected' if connections.get('odds_api', False) else '✗ Failed'}")
-        print(f"  ESPN API: {'✓ Connected' if connections.get('espn_api', False) else '✗ Failed'}")
+        print(f"  Odds API: {'Connected' if connections.get('odds_api', False) else 'Failed'}")
+        print(f"  ESPN API: {'Connected' if connections.get('espn_api', False) else 'Failed'}")
     except Exception as e:
         print(f"  Connection test failed: {e}")
     
@@ -567,16 +567,16 @@ def check_configuration() -> bool:
     
     # Validation
     is_valid = api_status['odds_api'] and abs(total_weight - 1.0) < 0.001
-    
+
     if is_valid:
-        print("\n✓ Configuration valid and ready for use")
+        print("\nConfiguration valid and ready for use")
     else:
-        print("\n✗ Configuration issues detected:")
+        print("\nConfiguration issues detected:")
         if not api_status['odds_api']:
             print("  - Odds API key required")
         if abs(total_weight - 1.0) >= 0.001:
             print(f"  - Factor weights don't sum to 1.0 (got {total_weight})")
-    
+
     return is_valid
 
 
@@ -603,66 +603,64 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
     
     try:
         # Get comprehensive game context
-        print("📊 Fetching game data...")
+        print("Fetching game data...")
         context = data_manager.get_game_context(home_team, away_team, week)
-        
+
         # Display data quality
         quality = context.get('data_quality', 0)
         quality_str = f"{quality:.1%}"
-        print(f"📈 Data Quality: {quality_str}")
-        
+        print(f"Data Quality: {quality_str}")
+
         # Get betting line
         vegas_spread = context.get('vegas_spread')
         if vegas_spread is not None:
-            print(f"💰 Vegas Spread: {home_team} {vegas_spread:+.1f}")
+            print(f"Vegas Spread: {home_team} {vegas_spread:+.1f}")
         else:
-            print("💰 Vegas Spread: Not available")
+            print("Vegas Spread: Not available")
         
         # Show data availability if verbose
         if verbose:
-            print(f"\n📋 Data Sources: {', '.join(context.get('data_sources', []))}")
-            
+            print(f"\nData Sources: {', '.join(context.get('data_sources', []))}")
+
             availability = data_manager.validate_data_availability(home_team, away_team)
-            print("🔍 Data Availability:")
+            print("Data Availability:")
             for source, available in availability.items():
-                status = "✓" if available else "✗"
+                status = "Yes" if available else "No"
                 print(f"   {source}: {status}")
         
         # Show team information
         home_data = context.get('home_team_data', {})
         away_data = context.get('away_team_data', {})
-        
-        print(f"\n🏟️  Team Information:")
-        
+
+        print(f"\nTeam Information:")
+
         # Home team info
         home_info = home_data.get('info', {})
         home_display = home_info.get('display_name', home_team)
-        home_conf = home_info.get('conference', {}).get('name', 'Unknown')
-        print(f"   {home_team}: {home_display} ({home_conf})")
-        
+        print(f"{home_team}: {home_display}")
+
         # Away team info
         away_info = away_data.get('info', {})
         away_display = away_info.get('display_name', away_team)
-        away_conf = away_info.get('conference', {}).get('name', 'Unknown')
-        print(f"   {away_team}: {away_display} ({away_conf})")
+        print(f"{away_team}: {away_display}")
         
         # Show coaching comparison
         coaching_comp = context.get('coaching_comparison', {})
         if coaching_comp and show_factors:
-            print(f"\n👨‍💼 Coaching Comparison:")
-            
+            print(f"\nCoaching Comparison:")
+
             home_coach = coaching_comp.get('home_coaching', {})
             away_coach = coaching_comp.get('away_coaching', {})
-            
+
             home_coach_name = home_coach.get('head_coach_name', 'Unknown')
             away_coach_name = away_coach.get('head_coach_name', 'Unknown')
-            
+
             home_exp = home_coach.get('head_coach_experience', 0)
             away_exp = away_coach.get('head_coach_experience', 0)
-            
+
             print(f"   {home_team}: {home_coach_name} ({home_exp} years)")
             print(f"   {away_team}: {away_coach_name} ({away_exp} years)")
-            
+
             exp_diff = coaching_comp.get('experience_differential', 0)
             if exp_diff > 0:
                 print(f"   Experience Edge: {home_team} +{exp_diff} years")
@@ -672,7 +670,7 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
                 print(f"   Experience Edge: Even")
         
         # Generate contrarian prediction using the prediction engine
-        print(f"\n🎯 Generating Contrarian Prediction...")
+        print(f"\nGenerating Contrarian Prediction...")
         prediction_result = prediction_engine.generate_prediction(home_team, away_team, week)
         
         # Calculate confidence assessment
@@ -696,14 +694,14 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
         )
         
         # Display prediction results
-        print(f"\n📊 Prediction Results:")
-        print(f"   Vegas Spread: {home_team} {vegas_spread:+.1f}" if vegas_spread is not None else "   Vegas Spread: Not available")
+        print(f"\nPrediction Results:")
+        print(f"Vegas Spread: {home_team} {vegas_spread:+.1f}" if vegas_spread is not None else "Vegas Spread: Not available")
         
         if prediction_result.get('contrarian_spread') is not None:
             contrarian_spread = prediction_result['contrarian_spread']
             total_adjustment = prediction_result.get('total_adjustment', 0.0)
             edge_size = prediction_result.get('edge_size', 0.0)
-            
+
             # Handle None values
             if contrarian_spread is None:
                 contrarian_spread = 0.0
@@ -711,20 +709,20 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
                 total_adjustment = 0.0
             if edge_size is None:
                 edge_size = 0.0
-                
-            print(f"   Contrarian Prediction: {home_team} {contrarian_spread:+.1f}")
-            print(f"   Factor Adjustment: {total_adjustment:+.2f} points")
-            print(f"   Edge Size: {edge_size:.2f} points")
+
+            print(f"Contrarian Prediction: {home_team} {contrarian_spread:+.1f}")
+            print(f"Factor Adjustment: {total_adjustment:+.2f} points")
+            print(f"Edge Size: {edge_size:.2f} points")
         else:
-            print("   Contrarian Prediction: Cannot calculate without betting line")
+            print("Contrarian Prediction: Cannot calculate without betting line")
         
-        print(f"\n🎯 Edge Analysis:")
-        print(f"   Edge Type: {edge_classification.edge_type.value.replace('_', ' ').title()}")
-        print(f"   Confidence: {confidence_assessment['confidence_level']} ({confidence_assessment['confidence_percentage']})")
-        print(f"   Recommendation: {edge_classification.recommended_action}")
+        print(f"\nEdge Analysis:")
+        print(f"Edge Type: {edge_classification.edge_type.value.replace('_', ' ').title()}")
+        print(f"Confidence: {confidence_assessment['confidence_level']} ({confidence_assessment['confidence_percentage']})")
+        print(f"Recommendation: {edge_classification.recommended_action}")
         
         if show_factors:
-            print(f"\n📈 Factor Breakdown:")
+            print(f"\nFactor Breakdown:")
             for factor_name, factor_result in factor_results['factors'].items():
                 if factor_result['success']:
                     value = factor_result.get('value', 0.0)
@@ -736,19 +734,19 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
                         weighted_value = 0.0
                     print(f"   {factor_name}: {value:+.3f} (weighted: {weighted_value:+.3f})")
                     if factor_result.get('explanation'):
-                        print(f"      → {factor_result['explanation']}")
+                        print(f"      -> {factor_result['explanation']}")
                 else:
                     print(f"   {factor_name}: FAILED - {factor_result.get('error', 'Unknown error')}")
-            
-            print(f"\n📊 Category Summary:")
+
+            print(f"\nCategory Summary:")
             for category, adjustment in factor_results['summary'].get('category_adjustments', {}).items():
                 # Handle None adjustment values
                 if adjustment is None:
                     adjustment = 0.0
                 print(f"   {category.replace('_', ' ').title()}: {adjustment:+.3f} points")
         
-        print(f"\n💡 Explanation:")
-        print(f"   {edge_classification.explanation}")
+        print(f"\nExplanation:")
+        print(f"{edge_classification.explanation}")
         
         # Build result structure with prediction engine results
         result = {
@@ -777,8 +775,8 @@ def run_single_prediction(home_team: str, away_team: str, week: Optional[int] = 
         return result
         
     except Exception as e:
-        print(f"❌ Error analyzing game: {e}")
-        
+        print(f"Error analyzing game: {e}")
+
         # Return error result
         return {
             'home_team': home_team,
@@ -812,7 +810,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
             try:
                 weekly_data = data_manager.odds_client.get_weekly_spreads(week)
                 betting_games = weekly_data.get('games', [])
-                
+
                 for game in betting_games:
                     home = game.get('home_team')
                     away = game.get('away_team')
@@ -826,7 +824,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                             'has_line': True
                         })
             except Exception as e:
-                print(f"⚠️  Could not fetch odds data: {e}")
+                print(f"Could not fetch odds data: {e}")
         
         # Also get games from schedule API to ensure we have all P4 games
         try:
@@ -859,7 +857,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                                 'has_line': False
                             })
         except Exception as e:
-            print(f"⚠️  Could not fetch schedule data: {e}")
+            print(f"Could not fetch schedule data: {e}")
         
         # Power 4 conference teams (accurate as of 2024 season)
         power4_teams = {
@@ -936,7 +934,7 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
                 power4_games.append(game)
         
         if not power4_games:
-            print("📭 No Power 4 vs Power 4 games found for this week")
+            print("No Power 4 vs Power 4 games found for this week")
             print("   Only games where BOTH teams are from Power 4 conferences are shown")
             print("   This might be early season (mostly non-conference games) or an off-week")
             return
@@ -953,30 +951,30 @@ def run_weekly_analysis(week: int, min_edge: float = 3.0) -> None:
         
         # Summary
         print("-" * 60)
-        
+
         conf_games = [g for g in power4_games if g['matchup_type'] == 'Conference']
         non_conf_games = [g for g in power4_games if g['matchup_type'] == 'Non-Conference']
         games_with_lines = [g for g in power4_games if g['spread'] is not None]
-        
-        print(f"📊 Summary: {len(power4_games)} Power 4 vs Power 4 games this week")
-        print(f"   • {len(conf_games)} conference games")  
-        print(f"   • {len(non_conf_games)} non-conference Power 4 matchups")
-        
+
+        print(f"Summary: {len(power4_games)} Power 4 vs Power 4 games this week")
+        print(f"   - {len(conf_games)} conference games")
+        print(f"   - {len(non_conf_games)} non-conference Power 4 matchups")
+
         if games_with_lines:
-            print(f"\n💡 Analyze individual games:")
+            print(f"\nAnalyze individual games:")
             for game in games_with_lines[:2]:  # Show first 2 examples
                 print(f"   python main.py --home \"{game['home_team']}\" --away \"{game['away_team']}\"")
             if len(games_with_lines) > 2:
                 print(f"   (... {len(games_with_lines) - 2} more games available)")
-        
+
     except Exception as e:
-        print(f"❌ Error in weekly analysis: {e}")
+        print(f"Error in weekly analysis: {e}")
         print("   Check your API configuration and try again")
 
 
 def _display_games_simple(games):
     """Display games in a simple, terminal-friendly format."""
-    print("\n🏈 Power 4 vs Power 4 Games:")
+    print("\nPower 4 vs Power 4 Games:")
     print("-" * 80)
     
     for i, game in enumerate(games, 1):
@@ -1087,10 +1085,10 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                 power4_games.append(game)
         
         if not power4_games:
-            print("❌ No P4 vs P4 games found for this week")
+            print("No P4 vs P4 games found for this week")
             return []
-        
-        print(f"📊 Found {len(power4_games)} P4 vs P4 games with betting lines")
+
+        print(f"Found {len(power4_games)} P4 vs P4 games with betting lines")
         
         # Smart filtering: Focus on games with higher edge probability
         # Games with massive spreads rarely have contrarian value
@@ -1128,26 +1126,26 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         
         # Limit games if needed
         if len(games_to_analyze) > MAX_GAMES_TO_ANALYZE:
-            print(f"⚠️  Limiting analysis to {MAX_GAMES_TO_ANALYZE} closest games")
+            print(f"Limiting analysis to {MAX_GAMES_TO_ANALYZE} closest games")
             games_to_analyze = games_to_analyze[:MAX_GAMES_TO_ANALYZE]
-        
-        print(f"🎯 Smart filtering: Analyzing {len(games_to_analyze)} games (skipping {len(games_skipped)} blowouts)")
-        
+
+        print(f"Smart filtering: Analyzing {len(games_to_analyze)} games (skipping {len(games_skipped)} blowouts)")
+
         # Calculate estimated runtime
         from datetime import datetime, timedelta
         import time
         total_minutes = len(games_to_analyze) * delay_minutes
         estimated_completion = datetime.now() + timedelta(minutes=total_minutes)
-        
-        print(f"⏱️  Estimated runtime: {total_minutes:.1f} minutes ({delay_minutes} min delay between games)")
+
+        print(f"Estimated runtime: {total_minutes:.1f} minutes ({delay_minutes} min delay between games)")
         print(f"   Expected completion: {estimated_completion.strftime('%I:%M %p')}")
         
         if games_skipped:
             print(f"   Skipped games with spreads > {MAX_SPREAD_FOR_ANALYSIS}:")
             for game in games_skipped[:3]:  # Show first 3
-                print(f"     • {game['away_team']} @ {game['home_team']} ({game['spread']:+.1f})")
+                print(f"     - {game['away_team']} @ {game['home_team']} ({game['spread']:+.1f})")
             if len(games_skipped) > 3:
-                print(f"     • ... and {len(games_skipped) - 3} more")
+                print(f"     - ... and {len(games_skipped) - 3} more")
         
         print()
         
@@ -1158,9 +1156,9 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
         for i, game in enumerate(games_to_analyze, 1):
             home_team = game['home_team']
             away_team = game['away_team']
-            
-            priority_emoji = "🔥" if game['priority'] == 'HIGH' else "📊"
-            print(f"[{i}/{len(games_to_analyze)}] {priority_emoji} {away_team} @ {home_team} ({game['spread']:+.1f})", end=" → ")
+
+            priority_tag = "[HIGH]" if game['priority'] == 'HIGH' else "[MED]"
+            print(f"[{i}/{len(games_to_analyze)}] {priority_tag} {away_team} @ {home_team} ({game['spread']:+.1f})", end=" -> ")
             
             try:
                 # Generate prediction
@@ -1198,29 +1196,29 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                     
                     predictions.append(prediction)
                     successful_predictions += 1
-                    print(f" ✅ EDGE FOUND!")
+                    print(f" EDGE FOUND!")
                 else:
-                    print(f" ❌")
-                
+                    print(f" -")
+
                 # Delay between games to prevent rate limiting
                 if i < len(games_to_analyze) and delay_minutes > 0:
                     next_game_time = datetime.now() + timedelta(minutes=delay_minutes)
-                    print(f"   ⏳ Waiting {delay_minutes} minutes before next game... (resumes at {next_game_time.strftime('%I:%M %p')})")
+                    print(f"   Waiting {delay_minutes} minutes before next game... (resumes at {next_game_time.strftime('%I:%M %p')})")
                     time.sleep(delay_minutes * 60)  # Convert to seconds
-                
+
             except Exception as e:
-                print(f" 🚨 ERROR")
+                print(f" ERROR")
                 continue
         
         # Summary
         print("=" * 70)
         print("PREDICTION RESULTS")
         print("=" * 70)
-        
+
         if predictions:
-            print(f"✅ Found {successful_predictions} contrarian opportunities:")
+            print(f"Found {successful_predictions} contrarian opportunities:")
             print()
-            
+
             for i, pred in enumerate(predictions, 1):
                 print(f"{i:2d}. {pred['recommendation']}")
                 print(f"     Game: {pred['away_team']} @ {pred['home_team']}")
@@ -1229,14 +1227,14 @@ def run_p4_predictions(week: int, min_edge: float = 1.0, min_confidence: float =
                     print(f"     Rationale: {pred['bet_rationale']}")
                 print()
         else:
-            print(f"❌ No contrarian opportunities found")
+            print(f"No contrarian opportunities found")
             print(f"   Analyzed {len(games_to_analyze)} games (skipped {len(games_skipped)} blowouts)")
             print(f"   Try lowering --min-edge (current: {min_edge:.1f}) or --min-confidence (current: {min_confidence:.1f}%)")
-        
+
         return predictions
-        
+
     except Exception as e:
-        print(f"❌ Error in P4 predictions: {e}")
+        print(f"Error in P4 predictions: {e}")
         return []
 
 
@@ -1331,9 +1329,9 @@ def main() -> int:
             if predictions:
                 from utils.prediction_storage import prediction_storage
                 filepath = prediction_storage.save_weekly_predictions(predictions, week_to_analyze)
-                print(f"💾 Predictions saved to: {filepath}")
+                print(f"Predictions saved to: {filepath}")
             else:
-                print("💾 No predictions to save (no edges found)")
+                print("No predictions to save (no edges found)")
         
         # Performance timing
         execution_time = time.time() - start_time
