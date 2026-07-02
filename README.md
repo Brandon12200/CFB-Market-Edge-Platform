@@ -1,6 +1,6 @@
 # CFB Contrarian Predictor
 
-A rule-based system that adjusts Vegas college football spreads using 11 quantifiable factors. Built to test whether a fixed-weight model could find edges without the overfitting that kills most backtested systems.
+A rule-based system that adjusts Vegas college football spreads for the 2025 college football season using 11 quantifiable factors. Built to test whether a fixed-weight model could find edges without the overfitting that kills most backtested systems.
 
 The model was frozen on August 25, 2025—three days before Week 1—and run forward with no algorithmic modifications. Predictions committed to git before each week's games, results recorded after. Git history provides the audit trail.
 
